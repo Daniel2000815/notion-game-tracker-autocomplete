@@ -1,0 +1,3 @@
+howlongtobeatpy
+requests
+python-dotenv
