@@ -21,7 +21,7 @@ Autocomplete integration for Notion game tracker
 
     pip install -r requirements.txt
     ```
-2. Add a new connection to the template and enable it.
+2. Add a new connection to the template and enable it in the databases `Game Library` and `Stats`.
 3. Get you IGDB credentials.
 4. Edit the file `.env` with your data:
     ```bash
