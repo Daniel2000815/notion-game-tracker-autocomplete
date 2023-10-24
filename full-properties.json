@@ -1,0 +1,176 @@
+{
+     "object": "list",
+     "results": [
+          {
+               "object": "page",
+               "id": "51110de0-88dc-437c-9625-a3fb43c7dbd5",
+               "created_time": "2023-10-17T08:10:00.000Z",
+               "last_edited_time": "2023-10-24T07:27:00.000Z",
+               "created_by": {
+                    "object": "user",
+                    "id": "c6990939-7339-452c-bb95-887ab24fa547"
+               },
+               "last_edited_by": {
+                    "object": "user",
+                    "id": "2ce670c0-5d66-49b9-b1fc-d9c0520515f9"
+               },
+               "cover": {
+                    "type": "external",
+                    "external": {
+                         "url": "https://images.igdb.com/igdb/image/upload/t_1080p/scagx5.png"
+                    }
+               },
+               "icon": {
+                    "type": "external",
+                    "external": {
+                         "url": "https://images.igdb.com/igdb/image/upload/t_cover_big/co4hpr.png"
+                    }
+               },
+               "parent": {
+                    "type": "database_id",
+                    "database_id": "4832bb2b-ac5b-44da-938e-dfb4efe0a605"
+               },
+               "archived": false,
+               "properties": {
+                    "Complete Date": {
+                         "id": "GhB%3C",
+                         "type": "date",
+                         "date": null
+                    },
+                    "Catalog": {
+                         "id": "Op%3CK",
+                         "type": "multi_select",
+                         "multi_select": [
+                              {
+                                   "id": "085deef0-33b4-4ab9-ad9a-4e18ff834c80",
+                                   "name": "Steam",
+                                   "color": "blue"
+                              }
+                         ]
+                    },
+                    "Rating": {
+                         "id": "PIb%7D",
+                         "type": "number",
+                         "number": null
+                    },
+                    "Playtime": {
+                         "id": "PZfl",
+                         "type": "number",
+                         "number": null
+                    },
+                    "Platform": {
+                         "id": "%5DuB%5E",
+                         "type": "multi_select",
+                         "multi_select": [
+                              {
+                                   "id": "`kay",
+                                   "name": "PC",
+                                   "color": "purple"
+                              }
+                         ]
+                    },
+                    "Genre": {
+                         "id": "%60TrB",
+                         "type": "multi_select",
+                         "multi_select": [
+                              {
+                                   "id": "6ab6dda9-f3c4-435c-9c0a-e66ca32dcbc1",
+                                   "name": "Puzzle",
+                                   "color": "gray"
+                              },
+                              {
+                                   "id": "66119a11-4ea3-4654-81e6-3b23199c784d",
+                                   "name": "Indie",
+                                   "color": "purple"
+                              }
+                         ]
+                    },
+                    "IGDB Rating": {
+                         "id": "bQnK",
+                         "type": "number",
+                         "number": 79.98
+                    },
+                    "Stats": {
+                         "id": "eE%5B%40",
+                         "type": "relation",
+                         "relation": [],
+                         "has_more": false
+                    },
+                    "HLTB": {
+                         "id": "h%60Mr",
+                         "type": "number",
+                         "number": 4.73
+                    },
+                    "Franchise": {
+                         "id": "jS~Y",
+                         "type": "multi_select",
+                         "multi_select": []
+                    },
+                    "Launch Date": {
+                         "id": "jvqO",
+                         "type": "date",
+                         "date": {
+                              "start": "2022-11-08",
+                              "end": null,
+                              "time_zone": null
+                         }
+                    },
+                    "Status": {
+                         "id": "n%3A%3Ac",
+                         "type": "select",
+                         "select": {
+                              "id": "qBVZ",
+                              "name": "Playing",
+                              "color": "orange"
+                         }
+                    },
+                    "Start Date": {
+                         "id": "x%7CjL",
+                         "type": "date",
+                         "date": null
+                    },
+                    "Developer": {
+                         "id": "zChm",
+                         "type": "multi_select",
+                         "multi_select": [
+                              {
+                                   "id": "bc6ddced-9267-4c02-9bd4-badfb2efbed9",
+                                   "name": "Max Inferno",
+                                   "color": "green"
+                              }
+                         ]
+                    },
+                    "Game Title": {
+                         "id": "title",
+                         "type": "title",
+                         "title": [
+                              {
+                                   "type": "text",
+                                   "text": {
+                                        "content": "A Little to the Left",
+                                        "link": null
+                                   },
+                                   "annotations": {
+                                        "bold": false,
+                                        "italic": false,
+                                        "strikethrough": false,
+                                        "underline": false,
+                                        "code": false,
+                                        "color": "default"
+                                   },
+                                   "plain_text": "A Little to the Left",
+                                   "href": null
+                              }
+                         ]
+                    }
+               },
+               "url": "https://www.notion.so/A-Little-to-the-Left-51110de088dc437c9625a3fb43c7dbd5",
+               "public_url": null
+          }
+     ],
+     "next_cursor": null,
+     "has_more": false,
+     "type": "page_or_database",
+     "page_or_database": {},
+     "request_id": "cceeeafe-6e51-4101-9d67-f077cd12a48d"
+}

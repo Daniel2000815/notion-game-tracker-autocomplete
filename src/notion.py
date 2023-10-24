@@ -29,7 +29,8 @@ def getAllPages():
     page_count = 1
     params = {"page_size": 100} 
     readUrl = f"https://api.notion.com/v1/databases/{databaseID}/query"
-
+    pages = []
+    
     search_response = requests.request("POST", readUrl, json=params, headers=headers)
     if search_response.ok:
         search_response_obj = search_response.json()		
