@@ -3,27 +3,27 @@
      "results": [
           {
                "object": "page",
-               "id": "51110de0-88dc-437c-9625-a3fb43c7dbd5",
-               "created_time": "2023-10-17T08:10:00.000Z",
-               "last_edited_time": "2023-10-24T07:27:00.000Z",
+               "id": "535e96b2-d2ba-4c2c-a155-2068beba5ee8",
+               "created_time": "2023-10-31T14:07:00.000Z",
+               "last_edited_time": "2023-11-06T12:43:00.000Z",
                "created_by": {
                     "object": "user",
                     "id": "c6990939-7339-452c-bb95-887ab24fa547"
                },
                "last_edited_by": {
                     "object": "user",
-                    "id": "2ce670c0-5d66-49b9-b1fc-d9c0520515f9"
+                    "id": "c6990939-7339-452c-bb95-887ab24fa547"
                },
                "cover": {
                     "type": "external",
                     "external": {
-                         "url": "https://images.igdb.com/igdb/image/upload/t_1080p/scagx5.png"
+                         "url": "https://images.igdb.com/igdb/image/upload/t_1080p/v3fgqoaeumij3urljfnk.png"
                     }
                },
                "icon": {
                     "type": "external",
                     "external": {
-                         "url": "https://images.igdb.com/igdb/image/upload/t_cover_big/co4hpr.png"
+                         "url": "https://images.igdb.com/igdb/image/upload/t_cover_big/cwcj7fd5sulqavyme3vc.png"
                     }
                },
                "parent": {
@@ -32,6 +32,16 @@
                },
                "archived": false,
                "properties": {
+                    "Anticipated": {
+                         "id": "%3A%60aE",
+                         "type": "checkbox",
+                         "checkbox": true
+                    },
+                    "Created time": {
+                         "id": "GN%3A%3D",
+                         "type": "created_time",
+                         "created_time": "2023-10-31T14:07:00.000Z"
+                    },
                     "Complete Date": {
                          "id": "GhB%3C",
                          "type": "date",
@@ -42,9 +52,9 @@
                          "type": "multi_select",
                          "multi_select": [
                               {
-                                   "id": "085deef0-33b4-4ab9-ad9a-4e18ff834c80",
-                                   "name": "Steam",
-                                   "color": "blue"
+                                   "id": "86ad7441-3f6c-4212-adc4-2df201ab2014",
+                                   "name": "Epic Games",
+                                   "color": "gray"
                               }
                          ]
                     },
@@ -74,32 +84,51 @@
                          "type": "multi_select",
                          "multi_select": [
                               {
-                                   "id": "6ab6dda9-f3c4-435c-9c0a-e66ca32dcbc1",
-                                   "name": "Puzzle",
-                                   "color": "gray"
+                                   "id": "42316eb2-6e9c-4035-a817-41973aa0ebe8",
+                                   "name": "Shooter",
+                                   "color": "red"
+                              },
+                              {
+                                   "id": "51901411-5446-45e4-af13-03f54af79ea2",
+                                   "name": "Role-playing (RPG)",
+                                   "color": "orange"
+                              },
+                              {
+                                   "id": "58b4e750-7e29-4531-a78e-e72c962b6512",
+                                   "name": "Adventure",
+                                   "color": "red"
                               },
                               {
                                    "id": "66119a11-4ea3-4654-81e6-3b23199c784d",
                                    "name": "Indie",
                                    "color": "purple"
+                              },
+                              {
+                                   "id": "db58b0e6-6179-486a-a1d3-fb62486edce4",
+                                   "name": "Arcade",
+                                   "color": "default"
                               }
                          ]
                     },
                     "IGDB Rating": {
                          "id": "bQnK",
                          "type": "number",
-                         "number": 79.98
+                         "number": 76.92
                     },
                     "Stats": {
                          "id": "eE%5B%40",
                          "type": "relation",
-                         "relation": [],
+                         "relation": [
+                              {
+                                   "id": "26507f30-3feb-40b9-9030-a54c4bb8d5e3"
+                              }
+                         ],
                          "has_more": false
                     },
                     "HLTB": {
                          "id": "h%60Mr",
                          "type": "number",
-                         "number": 4.73
+                         "number": null
                     },
                     "Franchise": {
                          "id": "jS~Y",
@@ -110,7 +139,7 @@
                          "id": "jvqO",
                          "type": "date",
                          "date": {
-                              "start": "2022-11-08",
+                              "start": "2023-11-21",
                               "end": null,
                               "time_zone": null
                          }
@@ -119,9 +148,9 @@
                          "id": "n%3A%3Ac",
                          "type": "select",
                          "select": {
-                              "id": "qBVZ",
-                              "name": "Playing",
-                              "color": "orange"
+                              "id": "d47d83e9-0ee1-4843-9823-df5a7d5a6a42",
+                              "name": "Pending",
+                              "color": "yellow"
                          }
                     },
                     "Start Date": {
@@ -134,8 +163,8 @@
                          "type": "multi_select",
                          "multi_select": [
                               {
-                                   "id": "bc6ddced-9267-4c02-9bd4-badfb2efbed9",
-                                   "name": "Max Inferno",
+                                   "id": "a429fffe-6280-4eb1-bf42-925a5382b810",
+                                   "name": "Vlambeer",
                                    "color": "green"
                               }
                          ]
@@ -147,7 +176,7 @@
                               {
                                    "type": "text",
                                    "text": {
-                                        "content": "A Little to the Left",
+                                        "content": "Nuclear Throne",
                                         "link": null
                                    },
                                    "annotations": {
@@ -158,13 +187,13 @@
                                         "code": false,
                                         "color": "default"
                                    },
-                                   "plain_text": "A Little to the Left",
+                                   "plain_text": "Nuclear Throne",
                                    "href": null
                               }
                          ]
                     }
                },
-               "url": "https://www.notion.so/A-Little-to-the-Left-51110de088dc437c9625a3fb43c7dbd5",
+               "url": "https://www.notion.so/Nuclear-Throne-535e96b2d2ba4c2ca1552068beba5ee8",
                "public_url": null
           }
      ],
@@ -172,5 +201,5 @@
      "has_more": false,
      "type": "page_or_database",
      "page_or_database": {},
-     "request_id": "cceeeafe-6e51-4101-9d67-f077cd12a48d"
+     "request_id": "40e69a02-e636-472d-84b1-51cd9ad0dfcc"
 }

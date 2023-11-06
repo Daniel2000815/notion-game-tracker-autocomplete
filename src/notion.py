@@ -106,7 +106,8 @@ def getPageByTitle(title):
 def updatePage(pageID, page, apiData, replace=False):
     pageProperties = page["properties"]
     newProperties = pageProperties
-
+    newProperties.pop("Created time")
+    
     updateAvailable = False
     if (replace or not pageProperties["Developer"]["multi_select"]) and apiData["developers"]:
         newProperties["Developer"]["multi_select"] = [{'name': dev} for dev in apiData["developers"]]
