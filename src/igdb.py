@@ -40,8 +40,7 @@ def dataFromQuery(query, userTitle):
 def searchGame(title, listAll=False, platformWanted="", verbose=False):
     data = f'search "{title}";  fields id, artworks, cover.image_id, first_release_date, franchises.name, genres.name, involved_companies.company.name, involved_companies.developer, name, platforms.name, total_rating, screenshots.image_id, genres.name;'
     response = requests.post('https://api.igdb.com/v4/games', headers=headers, data=data).json()
-
-    if len(response) == 0:
+    if len(response) == 0 or not response[0]["id"]:
         return {}
     
     similars = [dataFromQuery(query, title) for query in response]
