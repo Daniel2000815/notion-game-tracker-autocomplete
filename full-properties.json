@@ -3,27 +3,27 @@
      "results": [
           {
                "object": "page",
-               "id": "535e96b2-d2ba-4c2c-a155-2068beba5ee8",
-               "created_time": "2023-10-31T14:07:00.000Z",
-               "last_edited_time": "2023-11-06T12:43:00.000Z",
+               "id": "9dcb7a09-4321-40cf-a493-8fdd7a6733a2",
+               "created_time": "2024-01-02T10:49:00.000Z",
+               "last_edited_time": "2024-06-12T16:33:00.000Z",
                "created_by": {
                     "object": "user",
                     "id": "c6990939-7339-452c-bb95-887ab24fa547"
                },
                "last_edited_by": {
                     "object": "user",
-                    "id": "c6990939-7339-452c-bb95-887ab24fa547"
+                    "id": "2ce670c0-5d66-49b9-b1fc-d9c0520515f9"
                },
                "cover": {
                     "type": "external",
                     "external": {
-                         "url": "https://images.igdb.com/igdb/image/upload/t_1080p/v3fgqoaeumij3urljfnk.png"
+                         "url": "https://images.igdb.com/igdb/image/upload/t_1080p/scmngp.png"
                     }
                },
                "icon": {
                     "type": "external",
                     "external": {
-                         "url": "https://images.igdb.com/igdb/image/upload/t_cover_big/cwcj7fd5sulqavyme3vc.png"
+                         "url": "https://images.igdb.com/igdb/image/upload/t_cover_big/co6k3l.png"
                     }
                },
                "parent": {
@@ -31,6 +31,7 @@
                     "database_id": "4832bb2b-ac5b-44da-938e-dfb4efe0a605"
                },
                "archived": false,
+               "in_trash": false,
                "properties": {
                     "Anticipated": {
                          "id": "%3A%60aE",
@@ -40,7 +41,7 @@
                     "Created time": {
                          "id": "GN%3A%3D",
                          "type": "created_time",
-                         "created_time": "2023-10-31T14:07:00.000Z"
+                         "created_time": "2024-01-02T10:49:00.000Z"
                     },
                     "Complete Date": {
                          "id": "GhB%3C",
@@ -50,13 +51,7 @@
                     "Catalog": {
                          "id": "Op%3CK",
                          "type": "multi_select",
-                         "multi_select": [
-                              {
-                                   "id": "86ad7441-3f6c-4212-adc4-2df201ab2014",
-                                   "name": "Epic Games",
-                                   "color": "gray"
-                              }
-                         ]
+                         "multi_select": []
                     },
                     "Rating": {
                          "id": "PIb%7D",
@@ -71,49 +66,33 @@
                     "Platform": {
                          "id": "%5DuB%5E",
                          "type": "multi_select",
-                         "multi_select": [
-                              {
-                                   "id": "`kay",
-                                   "name": "PC",
-                                   "color": "purple"
-                              }
-                         ]
+                         "multi_select": []
                     },
                     "Genre": {
                          "id": "%60TrB",
                          "type": "multi_select",
                          "multi_select": [
                               {
-                                   "id": "42316eb2-6e9c-4035-a817-41973aa0ebe8",
-                                   "name": "Shooter",
-                                   "color": "red"
-                              },
-                              {
                                    "id": "51901411-5446-45e4-af13-03f54af79ea2",
                                    "name": "Role-playing (RPG)",
                                    "color": "orange"
                               },
                               {
+                                   "id": "153677fd-8062-4a33-9a38-350af7398524",
+                                   "name": "Hack and slash/Beat 'em up",
+                                   "color": "green"
+                              },
+                              {
                                    "id": "58b4e750-7e29-4531-a78e-e72c962b6512",
                                    "name": "Adventure",
                                    "color": "red"
-                              },
-                              {
-                                   "id": "66119a11-4ea3-4654-81e6-3b23199c784d",
-                                   "name": "Indie",
-                                   "color": "purple"
-                              },
-                              {
-                                   "id": "db58b0e6-6179-486a-a1d3-fb62486edce4",
-                                   "name": "Arcade",
-                                   "color": "default"
                               }
                          ]
                     },
                     "IGDB Rating": {
                          "id": "bQnK",
                          "type": "number",
-                         "number": 76.92
+                         "number": null
                     },
                     "Stats": {
                          "id": "eE%5B%40",
@@ -128,7 +107,7 @@
                     "HLTB": {
                          "id": "h%60Mr",
                          "type": "number",
-                         "number": null
+                         "number": 0
                     },
                     "Franchise": {
                          "id": "jS~Y",
@@ -139,7 +118,7 @@
                          "id": "jvqO",
                          "type": "date",
                          "date": {
-                              "start": "2023-11-21",
+                              "start": "2024-12-31",
                               "end": null,
                               "time_zone": null
                          }
@@ -148,9 +127,9 @@
                          "id": "n%3A%3Ac",
                          "type": "select",
                          "select": {
-                              "id": "d47d83e9-0ee1-4843-9823-df5a7d5a6a42",
-                              "name": "Pending",
-                              "color": "yellow"
+                              "id": "mc~H",
+                              "name": "Wishlist",
+                              "color": "blue"
                          }
                     },
                     "Start Date": {
@@ -163,9 +142,9 @@
                          "type": "multi_select",
                          "multi_select": [
                               {
-                                   "id": "a429fffe-6280-4eb1-bf42-925a5382b810",
-                                   "name": "Vlambeer",
-                                   "color": "green"
+                                   "id": "6826eace-ea6b-4f66-a64d-1678c60be05e",
+                                   "name": "S-Game",
+                                   "color": "orange"
                               }
                          ]
                     },
@@ -176,7 +155,7 @@
                               {
                                    "type": "text",
                                    "text": {
-                                        "content": "Nuclear Throne",
+                                        "content": "Phantom Blade 0",
                                         "link": null
                                    },
                                    "annotations": {
@@ -187,13 +166,13 @@
                                         "code": false,
                                         "color": "default"
                                    },
-                                   "plain_text": "Nuclear Throne",
+                                   "plain_text": "Phantom Blade 0",
                                    "href": null
                               }
                          ]
                     }
                },
-               "url": "https://www.notion.so/Nuclear-Throne-535e96b2d2ba4c2ca1552068beba5ee8",
+               "url": "https://www.notion.so/Phantom-Blade-0-9dcb7a09432140cfa4938fdd7a6733a2",
                "public_url": null
           }
      ],
@@ -201,5 +180,5 @@
      "has_more": false,
      "type": "page_or_database",
      "page_or_database": {},
-     "request_id": "40e69a02-e636-472d-84b1-51cd9ad0dfcc"
+     "request_id": "f3e749df-34f1-43da-b2d2-04aedb071824"
 }

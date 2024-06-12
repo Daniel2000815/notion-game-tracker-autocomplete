@@ -77,6 +77,36 @@ def getAllPagesTagged():
 
     return pages
 
+def getAllPagesStatus(status):
+    page_count = 1
+    params = {
+        "page_size": 100, 
+        "filter": {
+            "property": "Status",
+            "select": {
+                "equals": status
+            }
+        }
+    } 
+    readUrl = f"https://api.notion.com/v1/databases/{databaseID}/query"
+
+    search_response = requests.request("POST", readUrl, json=params, headers=headers)
+    if search_response.ok:
+        search_response_obj = search_response.json()		
+        pages = search_response_obj.get("results")
+
+        while search_response_obj.get("has_more"):
+            page_count += 1
+            params["start_cursor"] = search_response_obj.get("next_cursor")
+            search_response = requests.request("POST", readUrl, json=params, headers=headers)
+
+            if search_response.ok:
+                search_response_obj = search_response.json()
+                pages.extend(search_response_obj.get("results"))
+
+    return pages
+
+
 def needsUpdate(page):
     pageProperties = page["properties"]
 
@@ -101,6 +131,7 @@ def getPageByTitle(title):
 
     with open('./full-properties.json', 'w', encoding='utf8') as f:
         json.dump(data, f, ensure_ascii=False, indent=5)
+
     return data
 
 def updatePage(pageID, page, apiData, replace=False):
@@ -164,6 +195,8 @@ def processPage(page, replace=False, verbose=False, showUntouched=False, listAll
         title = properties["Game Title"]["title"][0]["plain_text"].replace("#","")
         platformWanted = ""
 
+    replace = replace or page["properties"]["Status"]["select"]["name"] == "Wishlist"
+
     if not replace and not needsUpdate(page):
         if showUntouched:
             print('👍 {} already updated'.format(title))
@@ -210,7 +243,7 @@ def processPage(page, replace=False, verbose=False, showUntouched=False, listAll
 
 
 def updateAll(replace=False, verbose=False, showUntouched=False, listAll=False):
-    pages = getAllPages()
+    pages = getAllPagesStatus("Wishlist")
     count = 0
     for page in pages:
         processPage(page, replace=replace, verbose=verbose, listAll=listAll, showUntouched=showUntouched)
@@ -222,7 +255,7 @@ def updateTitle(title, replace=False, verbose=False, showUntouched=False, listAl
     query = getPageByTitle(title)
    
     if not query or not "results" in query or not query["results"]:
-        print('⚠️ {} not found in database'.format(title))
+        print('⚠️ {} not found in Notion database'.format(title))
         return
 
     processPage(query["results"][0], replace=replace, verbose=verbose, listAll=listAll, showUntouched=showUntouched)
