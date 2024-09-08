@@ -68,7 +68,7 @@ def searchGame(title, listAll=False, platformWanted="", verbose=False):
         platforms = []
 
         if len(similars)>1:
-            print('Multiple matches found for {} ({}). Choose what you prefer:'.format(title, len(similars)))
+            print('\n{}. Found {} matches:'.format(title.upper(), len(similars)))
             for i in range(len(similars)):
                 print('{}. {} ({}, {})'.format(i, similars[i]["title"],  similars[i]["launchDate"],  similars[i]["platforms"]))
             

@@ -16,11 +16,11 @@ helps = [
     "Replace existing data for existing fields",
     "Also print message for entries that are not going to be updated",
     "Show updated values",
-    "Choose exec mode:\n\t watch: look for new entries to update in database ending in '#'\n\t one: update database entry with title [--title]\n\t all: update all",
+    "Choose exec mode:\n\t watch: look for new entries to update in database ending in '#'\n\t one: update database entry with title [--title]\n\t all: update all\n\t update: refresh wishlisted games",
     "Title to find when using mode=one"
 ]
 actions = ["store_true", "store_true", "store_true", "store_true", "store", "store"]
-defaults = [False, False, True, False, "watch", ""]
+defaults = [False, False, False, False, "watch", ""]
 parser = argparse.ArgumentParser()
 
 for i in range(0, len(helps)):
@@ -47,6 +47,9 @@ try:
     elif MODE=="all":
         print('== TRYING TO UPDATE ALL TITLES {} =='.format("(FORCING REPLACE)" if REPLACE else ""))
         notion.updateAll(replace=REPLACE, verbose=VERBOSE, showUntouched=UNTOUCHED, listAll=LIST)
+    elif MODE=="update":
+        print('== TRYING TO UPDATE ALL WISHLISTED TITLES {} =='.format("(FORCING REPLACE)" if REPLACE else ""))
+        notion.updateWishlisted(replace=REPLACE, verbose=VERBOSE, showUntouched=UNTOUCHED, listAll=LIST)
     else:
         printHelp()
     

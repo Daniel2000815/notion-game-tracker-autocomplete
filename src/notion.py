@@ -182,7 +182,7 @@ def updatePage(pageID, page, apiData, replace=False):
         return [2000, ""]
 
 def processPage(page, replace=False, verbose=False, showUntouched=False, listAll=False):
-    # print('Processing {}'.format(page["properties"]["Game Title"]["title"][0]["plain_text"]))
+    #print('Processing {}'.format(page["properties"]["Launch Date"]["date"]["start"]))
 
     properties = page["properties"]
     id = page["id"]
@@ -243,6 +243,15 @@ def processPage(page, replace=False, verbose=False, showUntouched=False, listAll
 
 
 def updateAll(replace=False, verbose=False, showUntouched=False, listAll=False):
+    pages = getAllPages()
+    count = 0
+    for page in pages:
+        processPage(page, replace=replace, verbose=verbose, listAll=listAll, showUntouched=showUntouched)
+        count += 1
+
+    print("Pages updated: ", count)
+
+def updateWishlisted(replace=False, verbose=False, showUntouched=False, listAll=False):
     pages = getAllPagesStatus("Wishlist")
     count = 0
     for page in pages:

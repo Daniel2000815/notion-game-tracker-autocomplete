@@ -8,9 +8,9 @@ Autocomplete integration for Notion game tracker
 | `-h`, `--help`          | Show help                                                                                                                           | `False`   |
 | `-l`, `--list-all`          | Choose between all posibble matches                                                                                                 | `False`   |
 | `-r`, `--replace`           | Replace existing data for found fields                                                                                           | `False`   |
-| `-s`, `--show-untouched`    | Also print message for entries that are not going to be updated                                                                     | `True`    |
+| `-s`, `--show-untouched`    | Also print message for entries that are not going to be updated                                                                     | `False`    |
 | `-v`, `--verbose`           | Show updated values                                                                                                                 | `False`   |
-| `-m MODE`, `--mode MODE`    | `watch`: look for new entries to update in database ending in '#'<br/> `one`: update database entry with title `[--title]`<br/> `all`: update all | `watch` |
+| `-m MODE`, `--mode MODE`    | `watch`: look for new entries to update in database ending in '#'<br/> `one`: update database entry with title `[--title]`<br/> `all`: update all<br/> `update`: refresh wishlisted games | `watch` |
 | `-t TITLE`, `--title TITLE` | Title to find when using `mode=one`                                                                                                   | `""`      |
 
 ## Set up
