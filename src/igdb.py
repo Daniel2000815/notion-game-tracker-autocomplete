@@ -36,10 +36,60 @@ def dataFromQuery(query, userTitle):
 
     return result
 
+def update_env_variable(file_path, variable_name, new_value):
+    """
+    Actualiza el valor de una variable en un archivo .env.
+    
+    :param file_path: Ruta del archivo .env.
+    :param variable_name: Nombre de la variable a modificar.
+    :param new_value: Nuevo valor para la variable.
+    """
+    try:
+        # Leer el archivo y guardar las líneas
+        with open(file_path, 'r') as file:
+            lines = file.readlines()
+        
+        # Modificar la línea correspondiente
+        with open(file_path, 'w') as file:
+            for line in lines:
+                # Identificar la variable a cambiar
+                if line.startswith(f"{variable_name}="):
+                    # Actualizar el valor
+                    file.write(f"{variable_name}={new_value}\n")
+                else:
+                    file.write(line)
+        print(f"Variable '{variable_name}' actualizada con éxito.")
+    except FileNotFoundError:
+        print(f"El archivo {file_path} no existe.")
+    except Exception as e:
+        print(f"Ocurrió un error: {e}")
+
+
+def renewToken() -> bool:
+    response = requests.post(f'https://id.twitch.tv/oauth2/token?client_id={os.getenv("IGDB_ID")}&client_secret={os.getenv("IGDB_SECRET")}&grant_type=client_credentials').json()
+
+    print(response)
+    if "access_token" in response:
+        update_env_variable('.env', 'IGDB_TOKEN', response["access_token"])
+        token = response["access_token"]
+        return True
+
+    return False
 
 def searchGame(title, listAll=False, platformWanted="", verbose=False):
     data = f'search "{title}";  fields id, artworks, cover.image_id, first_release_date, franchises.name, genres.name, involved_companies.company.name, involved_companies.developer, name, platforms.name, total_rating, screenshots.image_id, genres.name;'
     response = requests.post('https://api.igdb.com/v4/games', headers=headers, data=data).json()
+       
+    if "message" in response and "Authorization" in response["message"]:
+        ok = renewToken()
+
+        if ok:
+            print("IGDB token updated. Retrying...")
+            return searchGame(title, listAll, platformWanted, verbose)
+        else:
+            print("Error updating IGDB token.")
+            exit(1)
+
     if len(response) == 0 or not response[0]["id"]:
         return {}
     

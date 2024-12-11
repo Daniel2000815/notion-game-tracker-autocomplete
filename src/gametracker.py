@@ -20,7 +20,7 @@ helps = [
     "Title to find when using mode=one"
 ]
 actions = ["store_true", "store_true", "store_true", "store_true", "store", "store"]
-defaults = [False, False, True, False, "watch", ""]
+defaults = [True, False, True, False, "watch", ""]
 parser = argparse.ArgumentParser()
 
 for i in range(0, len(helps)):

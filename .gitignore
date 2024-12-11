@@ -1,4 +1,4 @@
 *.env
 *pycache
 src/.env
-stc/__pycache__/
+src/__pycache__/
