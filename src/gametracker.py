@@ -47,6 +47,9 @@ try:
     elif MODE=="all":
         print('== TRYING TO UPDATE ALL TITLES {} =='.format("(FORCING REPLACE)" if REPLACE else ""))
         notion.updateAll(replace=REPLACE, verbose=VERBOSE, showUntouched=UNTOUCHED, listAll=LIST)
+    elif MODE=="patch":
+        print('== TRYING TO PATCH ALL TITLES ==')
+        notion.updateAll(replace=REPLACE, verbose=VERBOSE, showUntouched=UNTOUCHED, listAll=LIST)
     else:
         printHelp()
     

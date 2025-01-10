@@ -3,27 +3,27 @@
      "results": [
           {
                "object": "page",
-               "id": "535e96b2-d2ba-4c2c-a155-2068beba5ee8",
-               "created_time": "2023-10-31T14:07:00.000Z",
-               "last_edited_time": "2023-11-06T12:43:00.000Z",
+               "id": "e93853ea-dc69-41b3-8278-071680f0d709",
+               "created_time": "2023-11-20T08:12:00.000Z",
+               "last_edited_time": "2025-01-10T17:32:00.000Z",
                "created_by": {
                     "object": "user",
                     "id": "c6990939-7339-452c-bb95-887ab24fa547"
                },
                "last_edited_by": {
                     "object": "user",
-                    "id": "c6990939-7339-452c-bb95-887ab24fa547"
+                    "id": "2ce670c0-5d66-49b9-b1fc-d9c0520515f9"
                },
                "cover": {
                     "type": "external",
                     "external": {
-                         "url": "https://images.igdb.com/igdb/image/upload/t_1080p/v3fgqoaeumij3urljfnk.png"
+                         "url": "https://images.igdb.com/igdb/image/upload/t_1080p/scdrv5.png"
                     }
                },
                "icon": {
                     "type": "external",
                     "external": {
-                         "url": "https://images.igdb.com/igdb/image/upload/t_cover_big/cwcj7fd5sulqavyme3vc.png"
+                         "url": "https://images.igdb.com/igdb/image/upload/t_cover_big/co3vlw.png"
                     }
                },
                "parent": {
@@ -31,16 +31,21 @@
                     "database_id": "4832bb2b-ac5b-44da-938e-dfb4efe0a605"
                },
                "archived": false,
+               "in_trash": false,
                "properties": {
                     "Anticipated": {
                          "id": "%3A%60aE",
-                         "type": "checkbox",
-                         "checkbox": true
+                         "type": "select",
+                         "select": {
+                              "id": "bQ_R",
+                              "name": "⭐️",
+                              "color": "red"
+                         }
                     },
                     "Created time": {
                          "id": "GN%3A%3D",
                          "type": "created_time",
-                         "created_time": "2023-10-31T14:07:00.000Z"
+                         "created_time": "2023-11-20T08:12:00.000Z"
                     },
                     "Complete Date": {
                          "id": "GhB%3C",
@@ -50,13 +55,7 @@
                     "Catalog": {
                          "id": "Op%3CK",
                          "type": "multi_select",
-                         "multi_select": [
-                              {
-                                   "id": "86ad7441-3f6c-4212-adc4-2df201ab2014",
-                                   "name": "Epic Games",
-                                   "color": "gray"
-                              }
-                         ]
+                         "multi_select": []
                     },
                     "Rating": {
                          "id": "PIb%7D",
@@ -73,47 +72,37 @@
                          "type": "multi_select",
                          "multi_select": [
                               {
-                                   "id": "`kay",
-                                   "name": "PC",
-                                   "color": "purple"
+                                   "id": "WMki",
+                                   "name": "Switch",
+                                   "color": "red"
                               }
                          ]
+                    },
+                    "IGDB ID": {
+                         "id": "%60E%5E%3C",
+                         "type": "number",
+                         "number": 172427
                     },
                     "Genre": {
                          "id": "%60TrB",
                          "type": "multi_select",
                          "multi_select": [
                               {
-                                   "id": "42316eb2-6e9c-4035-a817-41973aa0ebe8",
-                                   "name": "Shooter",
-                                   "color": "red"
-                              },
-                              {
-                                   "id": "51901411-5446-45e4-af13-03f54af79ea2",
-                                   "name": "Role-playing (RPG)",
-                                   "color": "orange"
+                                   "id": "5026d3d1-ecd9-4b05-b9f6-b280d85e961a",
+                                   "name": "Platform",
+                                   "color": "pink"
                               },
                               {
                                    "id": "58b4e750-7e29-4531-a78e-e72c962b6512",
                                    "name": "Adventure",
                                    "color": "red"
-                              },
-                              {
-                                   "id": "66119a11-4ea3-4654-81e6-3b23199c784d",
-                                   "name": "Indie",
-                                   "color": "purple"
-                              },
-                              {
-                                   "id": "db58b0e6-6179-486a-a1d3-fb62486edce4",
-                                   "name": "Arcade",
-                                   "color": "default"
                               }
                          ]
                     },
                     "IGDB Rating": {
                          "id": "bQnK",
                          "type": "number",
-                         "number": 76.92
+                         "number": 84.92
                     },
                     "Stats": {
                          "id": "eE%5B%40",
@@ -128,18 +117,24 @@
                     "HLTB": {
                          "id": "h%60Mr",
                          "type": "number",
-                         "number": null
+                         "number": 16.09
                     },
                     "Franchise": {
                          "id": "jS~Y",
                          "type": "multi_select",
-                         "multi_select": []
+                         "multi_select": [
+                              {
+                                   "id": "b18396a2-64ad-4bca-8d85-ed451ab13c01",
+                                   "name": "Kirby",
+                                   "color": "yellow"
+                              }
+                         ]
                     },
                     "Launch Date": {
                          "id": "jvqO",
                          "type": "date",
                          "date": {
-                              "start": "2023-11-21",
+                              "start": "2022-03-25",
                               "end": null,
                               "time_zone": null
                          }
@@ -153,6 +148,11 @@
                               "color": "yellow"
                          }
                     },
+                    "Additional Labels": {
+                         "id": "sWNZ",
+                         "type": "multi_select",
+                         "multi_select": []
+                    },
                     "Start Date": {
                          "id": "x%7CjL",
                          "type": "date",
@@ -163,9 +163,9 @@
                          "type": "multi_select",
                          "multi_select": [
                               {
-                                   "id": "a429fffe-6280-4eb1-bf42-925a5382b810",
-                                   "name": "Vlambeer",
-                                   "color": "green"
+                                   "id": "eb7aedb8-3808-401e-b85d-c7497c221d37",
+                                   "name": "HAL Laboratory",
+                                   "color": "orange"
                               }
                          ]
                     },
@@ -176,7 +176,7 @@
                               {
                                    "type": "text",
                                    "text": {
-                                        "content": "Nuclear Throne",
+                                        "content": "Kirby and the Forgotten Land",
                                         "link": null
                                    },
                                    "annotations": {
@@ -187,13 +187,197 @@
                                         "code": false,
                                         "color": "default"
                                    },
-                                   "plain_text": "Nuclear Throne",
+                                   "plain_text": "Kirby and the Forgotten Land",
                                    "href": null
                               }
                          ]
                     }
                },
-               "url": "https://www.notion.so/Nuclear-Throne-535e96b2d2ba4c2ca1552068beba5ee8",
+               "url": "https://www.notion.so/Kirby-and-the-Forgotten-Land-e93853eadc6941b38278071680f0d709",
+               "public_url": null
+          },
+          {
+               "object": "page",
+               "id": "45942a7d-f2b0-4be0-8719-40e265fa977b",
+               "created_time": "2023-11-17T21:48:00.000Z",
+               "last_edited_time": "2025-01-10T17:27:00.000Z",
+               "created_by": {
+                    "object": "user",
+                    "id": "c6990939-7339-452c-bb95-887ab24fa547"
+               },
+               "last_edited_by": {
+                    "object": "user",
+                    "id": "2ce670c0-5d66-49b9-b1fc-d9c0520515f9"
+               },
+               "cover": {
+                    "type": "external",
+                    "external": {
+                         "url": "https://images.igdb.com/igdb/image/upload/t_1080p/schthi.png"
+                    }
+               },
+               "icon": {
+                    "type": "external",
+                    "external": {
+                         "url": "https://images.igdb.com/igdb/image/upload/t_cover_big/co4yjz.png"
+                    }
+               },
+               "parent": {
+                    "type": "database_id",
+                    "database_id": "4832bb2b-ac5b-44da-938e-dfb4efe0a605"
+               },
+               "archived": false,
+               "in_trash": false,
+               "properties": {
+                    "Anticipated": {
+                         "id": "%3A%60aE",
+                         "type": "select",
+                         "select": {
+                              "id": ":|o:",
+                              "name": "⭐️⭐️⭐️",
+                              "color": "yellow"
+                         }
+                    },
+                    "Created time": {
+                         "id": "GN%3A%3D",
+                         "type": "created_time",
+                         "created_time": "2023-11-17T21:48:00.000Z"
+                    },
+                    "Complete Date": {
+                         "id": "GhB%3C",
+                         "type": "date",
+                         "date": null
+                    },
+                    "Catalog": {
+                         "id": "Op%3CK",
+                         "type": "multi_select",
+                         "multi_select": []
+                    },
+                    "Rating": {
+                         "id": "PIb%7D",
+                         "type": "number",
+                         "number": null
+                    },
+                    "Playtime": {
+                         "id": "PZfl",
+                         "type": "number",
+                         "number": null
+                    },
+                    "Platform": {
+                         "id": "%5DuB%5E",
+                         "type": "multi_select",
+                         "multi_select": []
+                    },
+                    "IGDB ID": {
+                         "id": "%60E%5E%3C",
+                         "type": "number",
+                         "number": 172427
+                    },
+                    "Genre": {
+                         "id": "%60TrB",
+                         "type": "multi_select",
+                         "multi_select": [
+                              {
+                                   "id": "5026d3d1-ecd9-4b05-b9f6-b280d85e961a",
+                                   "name": "Platform",
+                                   "color": "pink"
+                              }
+                         ]
+                    },
+                    "IGDB Rating": {
+                         "id": "bQnK",
+                         "type": "number",
+                         "number": 84.97
+                    },
+                    "Stats": {
+                         "id": "eE%5B%40",
+                         "type": "relation",
+                         "relation": [
+                              {
+                                   "id": "26507f30-3feb-40b9-9030-a54c4bb8d5e3"
+                              }
+                         ],
+                         "has_more": false
+                    },
+                    "HLTB": {
+                         "id": "h%60Mr",
+                         "type": "number",
+                         "number": 0
+                    },
+                    "Franchise": {
+                         "id": "jS~Y",
+                         "type": "multi_select",
+                         "multi_select": [
+                              {
+                                   "id": "b18396a2-64ad-4bca-8d85-ed451ab13c01",
+                                   "name": "Kirby",
+                                   "color": "yellow"
+                              }
+                         ]
+                    },
+                    "Launch Date": {
+                         "id": "jvqO",
+                         "type": "date",
+                         "date": {
+                              "start": "2022-04-27",
+                              "end": null,
+                              "time_zone": null
+                         }
+                    },
+                    "Status": {
+                         "id": "n%3A%3Ac",
+                         "type": "select",
+                         "select": {
+                              "id": "mc~H",
+                              "name": "Wishlist",
+                              "color": "blue"
+                         }
+                    },
+                    "Additional Labels": {
+                         "id": "sWNZ",
+                         "type": "multi_select",
+                         "multi_select": []
+                    },
+                    "Start Date": {
+                         "id": "x%7CjL",
+                         "type": "date",
+                         "date": null
+                    },
+                    "Developer": {
+                         "id": "zChm",
+                         "type": "multi_select",
+                         "multi_select": [
+                              {
+                                   "id": "eb7aedb8-3808-401e-b85d-c7497c221d37",
+                                   "name": "HAL Laboratory",
+                                   "color": "orange"
+                              }
+                         ]
+                    },
+                    "Game Title": {
+                         "id": "title",
+                         "type": "title",
+                         "title": [
+                              {
+                                   "type": "text",
+                                   "text": {
+                                        "content": "Kirby and the Forgotten Land",
+                                        "link": null
+                                   },
+                                   "annotations": {
+                                        "bold": false,
+                                        "italic": false,
+                                        "strikethrough": false,
+                                        "underline": false,
+                                        "code": false,
+                                        "color": "default"
+                                   },
+                                   "plain_text": "Kirby and the Forgotten Land",
+                                   "href": null
+                              }
+                         ]
+                    }
+               },
+               "url": "https://www.notion.so/Kirby-and-the-Forgotten-Land-45942a7df2b04be0871940e265fa977b",
                "public_url": null
           }
      ],
@@ -201,5 +385,5 @@
      "has_more": false,
      "type": "page_or_database",
      "page_or_database": {},
-     "request_id": "40e69a02-e636-472d-84b1-51cd9ad0dfcc"
+     "request_id": "fc0b8ecb-d593-45d7-9938-9988bff8bc73"
 }

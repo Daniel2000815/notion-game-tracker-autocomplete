@@ -80,7 +80,7 @@ def getAllPagesTagged():
 def needsUpdate(page):
     pageProperties = page["properties"]
 
-    return "#" in pageProperties["Game Title"]["title"][0]["text"]["content"] or not pageProperties["Developer"]["multi_select"] or not pageProperties["Launch Date"]["date"] or not pageProperties["Genre"]["multi_select"] or not pageProperties["IGDB Rating"]["number"] or not pageProperties["HLTB"]["number"] or not page["icon"] or not page["cover"]
+    return "#" in pageProperties["Game Title"]["title"][0]["text"]["content"] or not pageProperties["Developer"]["multi_select"] or not pageProperties["Launch Date"]["date"] or not pageProperties["Genre"]["multi_select"] or not pageProperties["IGDB Rating"]["number"] or not pageProperties["HLTB"]["number"] or not page["icon"] or not page["cover"] or not pageProperties["IGDB ID"]["number"]
 
 def missingFields(data):
     return [(clave) for clave, valor in data.items() if clave!="platforms" and (valor == "" or (isinstance(valor, list) and not valor))]
@@ -128,9 +128,12 @@ def updatePage(pageID, page, apiData, replace=False):
     if (replace or pageProperties["IGDB Rating"]["number"]==None) and apiData["rating"]!=None:
         newProperties["IGDB Rating"]["number"] = apiData["rating"]
         updateAvailable = True
-    if (replace or pageProperties["HLTB"]["number"]==None) and apiData["hltb"]!=None:
-        newProperties["HLTB"]["number"] = apiData["hltb"]
+    if (replace or pageProperties["IGDB ID"]["number"]==None) and apiData["igdb_id"]!=None:
+        newProperties["IGDB ID"]["number"] = apiData["igdb_id"]
         updateAvailable = True
+    # if (replace or pageProperties["HLTB"]["number"]==None) and apiData["hltb"]!=None:
+    #     newProperties["HLTB"]["number"] = apiData["hltb"]
+    #     updateAvailable = True
 
     updateUrl = f"https://api.notion.com/v1/pages/{pageID}"
     updateData = {"properties": newProperties}
@@ -171,12 +174,15 @@ def processPage(page, replace=False, verbose=False, showUntouched=False, listAll
                 print(properties)
         return
     
-    apiData = igdb.searchGame(title, listAll=listAll, platformWanted=platformWanted, verbose=verbose)
+    igdb_id = properties["IGDB ID"]["number"]
+    print('igdb id: {}'.format(igdb_id))
+    apiData = igdb.searchGame(title, listAll=listAll, platformWanted=platformWanted, verbose=verbose) if igdb_id==None else igdb.searchGameById(igdb_id)
     if not apiData:
         print('❌ {} not found in IGDB'.format(title))
         return
 
     nameDif = abs(len(apiData["title"]) - len(title))
+    print(apiData)
     if nameDif > 2:
         print('⚠️ Original name ({}) and found name ({}) differ by {} characters'.format(title, apiData["title"], nameDif))
 
@@ -214,6 +220,15 @@ def updateAll(replace=False, verbose=False, showUntouched=False, listAll=False):
     count = 0
     for page in pages:
         processPage(page, replace=replace, verbose=verbose, listAll=listAll, showUntouched=showUntouched)
+        count += 1
+
+    print("Pages updated: ", count)
+
+def patchAll(verbose=False, showUntouched=False, listAll=False):
+    pages = getAllPages()
+    count = 0
+    for page in pages:
+        processPage(page, replace=True, verbose=verbose, listAll=listAll, showUntouched=showUntouched)
         count += 1
 
     print("Pages updated: ", count)

@@ -17,7 +17,7 @@ headers = {
     "Content-Type": "application/json",
 }
 
-def dataFromQuery(query, userTitle):
+def dataFromQuery(query, userTitle=""):
     date = datetime.utcfromtimestamp(query["first_release_date"]).strftime('%Y-%m-%d') if "first_release_date" in query else ""
     iconURL = f'https://images.igdb.com/igdb/image/upload/t_cover_big/{query["cover"]["image_id"]}.png' if "cover" in query else ""
     screenshotsURLs = [f'https://images.igdb.com/igdb/image/upload/t_1080p/{shotID["image_id"]}.png' for shotID in query["screenshots"][:min(1, len(query["screenshots"]))]] if "screenshots" in query else []
@@ -29,9 +29,10 @@ def dataFromQuery(query, userTitle):
     rating = round(query["total_rating"], 2) if "total_rating" in query else None
     title = query["name"] if "name" in query else userTitle
     time = hltb.hltb(title)
+    igdb_id = query["id"]
 
     result = {
-        'title': title, "rating": rating, "developers": developers, "launchDate": date, "franchises": franchises, "genres": genres, "platforms": platforms, "icon": iconURL, "cover": coverURL, "hltb": time
+        'title': title, "rating": rating, "developers": developers, "launchDate": date, "franchises": franchises, "genres": genres, "platforms": platforms, "icon": iconURL, "cover": coverURL, "hltb": time, "igdb_id": igdb_id
     }
 
     return result
@@ -76,6 +77,27 @@ def renewToken() -> bool:
 
     return False
 
+def searchGameById(id):
+    data = f'where id={id};  fields id, artworks, cover.image_id, first_release_date, franchises.name, genres.name, involved_companies.company.name, involved_companies.developer, name, platforms.name, total_rating, screenshots.image_id, genres.name;'
+    response = requests.post('https://api.igdb.com/v4/games', headers=headers, data=data).json()
+       
+    if "message" in response and "Authorization" in response["message"]:
+        ok = renewToken()
+
+        if ok:
+            print("IGDB token updated. Retrying...")
+            return searchGameById(id)
+        else:
+            print("Error updating IGDB token.")
+            exit(1)
+
+    if len(response) == 0 or not response[0]["id"]:
+        return {}
+    
+    
+    return dataFromQuery(response[0])
+
+
 def searchGame(title, listAll=False, platformWanted="", verbose=False):
     data = f'search "{title}";  fields id, artworks, cover.image_id, first_release_date, franchises.name, genres.name, involved_companies.company.name, involved_companies.developer, name, platforms.name, total_rating, screenshots.image_id, genres.name;'
     response = requests.post('https://api.igdb.com/v4/games', headers=headers, data=data).json()
@@ -108,7 +130,7 @@ def searchGame(title, listAll=False, platformWanted="", verbose=False):
             similars = similars_filtered
        
     if not listAll:
-        # get most close title
+        # get closest title
         best_fit = similars[0]
         title_matches = difflib.get_close_matches(title, [sim["title"] for sim in similars], n=1, cutoff=0)
         if len(title_matches) > 0:
@@ -139,4 +161,5 @@ def searchGame(title, listAll=False, platformWanted="", verbose=False):
 
     return best_fit
 
-#print(searchGame("Super Mario Galaxy", platformWanted="wii", listAll=False))
+# print(searchGame("Super Mario Galaxy", platformWanted="wii", listAll=False))
+# print(searchGameById(-1))
