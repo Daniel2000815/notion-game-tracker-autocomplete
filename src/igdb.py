@@ -5,6 +5,21 @@ import difflib
 import os
 from dotenv import load_dotenv
 import hltb
+from typing import NamedTuple, List
+from spinner import Spinner
+
+class Game(NamedTuple):
+    igdbId: int
+    title: str
+    rating: int
+    developers: List[str]
+    launchDate: str
+    franchises: List[str]
+    genres: List[str]
+    platforms: List[str]
+    iconURL: str
+    coverURL: str
+    timeToBeat: float
 
 load_dotenv()
 
@@ -17,7 +32,7 @@ headers = {
     "Content-Type": "application/json",
 }
 
-def dataFromQuery(query, userTitle=""):
+def dataFromQuery(query, userTitle="")->Game:
     date = datetime.utcfromtimestamp(query["first_release_date"]).strftime('%Y-%m-%d') if "first_release_date" in query else ""
     iconURL = f'https://images.igdb.com/igdb/image/upload/t_cover_big/{query["cover"]["image_id"]}.png' if "cover" in query else ""
     screenshotsURLs = [f'https://images.igdb.com/igdb/image/upload/t_1080p/{shotID["image_id"]}.png' for shotID in query["screenshots"][:min(1, len(query["screenshots"]))]] if "screenshots" in query else []
@@ -28,14 +43,12 @@ def dataFromQuery(query, userTitle=""):
     developers = [dev["company"]["name"] for dev in query["involved_companies"] if dev["developer"]] if "involved_companies" in query else []
     rating = round(query["total_rating"], 2) if "total_rating" in query else None
     title = query["name"] if "name" in query else userTitle
-    time = hltb.hltb(title)
+    timeToBeat = hltb.hltb(title)
     igdb_id = query["id"]
 
-    result = {
-        'title': title, "rating": rating, "developers": developers, "launchDate": date, "franchises": franchises, "genres": genres, "platforms": platforms, "icon": iconURL, "cover": coverURL, "hltb": time, "igdb_id": igdb_id
-    }
-
-    return result
+    return Game(
+        igdb_id, title, rating, developers, date, franchises, genres, platforms, iconURL, coverURL, timeToBeat
+    )
 
 def update_env_variable(file_path, variable_name, new_value):
     """
@@ -77,7 +90,7 @@ def renewToken() -> bool:
 
     return False
 
-def searchGameById(id):
+def searchGameById(id)->Game:
     data = f'where id={id};  fields id, artworks, cover.image_id, first_release_date, franchises.name, genres.name, involved_companies.company.name, involved_companies.developer, name, platforms.name, total_rating, screenshots.image_id, genres.name;'
     response = requests.post('https://api.igdb.com/v4/games', headers=headers, data=data).json()
        
@@ -98,7 +111,7 @@ def searchGameById(id):
     return dataFromQuery(response[0])
 
 
-def searchGame(title, listAll=False, platformWanted="", verbose=False):
+def searchGameByTitle(title, listAll=True, platformWanted="", verbose=False)->Game:
     data = f'search "{title}";  fields id, artworks, cover.image_id, first_release_date, franchises.name, genres.name, involved_companies.company.name, involved_companies.developer, name, platforms.name, total_rating, screenshots.image_id, genres.name;'
     response = requests.post('https://api.igdb.com/v4/games', headers=headers, data=data).json()
        
@@ -107,22 +120,21 @@ def searchGame(title, listAll=False, platformWanted="", verbose=False):
 
         if ok:
             print("IGDB token updated. Retrying...")
-            return searchGame(title, listAll, platformWanted, verbose)
+            return searchGameByTitle(title, listAll, platformWanted, verbose)
         else:
             print("Error updating IGDB token.")
             exit(1)
 
-    if len(response) == 0 or not response[0]["id"]:
+    if len(response) == 0 or not "id" in response[0]:
         return {}
     
     similars = [dataFromQuery(query, title) for query in response]
-
     best_fit = None
     # filter by platform wanted
     if platformWanted:
         similars_filtered = [game for game in similars if len(difflib.get_close_matches(
             platformWanted,
-            game["platforms"],
+            game.platforms,
             n=1,cutoff=0.6)) > 0
         ]
         
@@ -132,18 +144,20 @@ def searchGame(title, listAll=False, platformWanted="", verbose=False):
     if not listAll:
         # get closest title
         best_fit = similars[0]
-        title_matches = difflib.get_close_matches(title, [sim["title"] for sim in similars], n=1, cutoff=0)
+        title_matches = difflib.get_close_matches(title, [sim.title for sim in similars], n=1, cutoff=0)
         if len(title_matches) > 0:
-            best_fit = [sim for sim in similars if sim["title"]==title_matches[0]][0]
+            best_fit = [sim for sim in similars if sim.title==title_matches[0]][0]
     else:
-        platforms = []
-
         if len(similars)>1:
+            spinner = Spinner()
+            spinner.stop()
             print('Multiple matches found for {} ({}). Choose what you prefer:'.format(title, len(similars)))
             for i in range(len(similars)):
-                print('{}. {} ({}, {})'.format(i, similars[i]["title"],  similars[i]["launchDate"],  similars[i]["platforms"]))
+                print('{}. {} ({}, {})'.format(i, similars[i].title,  similars[i].launchDate,  similars[i].platforms))
             
             user_input = input("Enter option (Press enter to skip) -> ")
+            spinner.resume(f'Selected option {user_input}')
+
             if not user_input:
                 return None
 
@@ -161,5 +175,5 @@ def searchGame(title, listAll=False, platformWanted="", verbose=False):
 
     return best_fit
 
-# print(searchGame("Super Mario Galaxy", platformWanted="wii", listAll=False))
+# print(searchGameByTitle("Super Mario Galaxy", platformWanted="wii", listAll=False))
 # print(searchGameById(-1))

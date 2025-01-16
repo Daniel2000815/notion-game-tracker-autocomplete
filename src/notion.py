@@ -1,5 +1,9 @@
 import requests, json, igdb, time, re, os
 from dotenv import load_dotenv
+from igdb import Game
+from typing import NamedTuple, List
+from spinner import Spinner
+
 load_dotenv()
 
 token = os.getenv('NOTION_TOKEN')
@@ -11,247 +15,291 @@ headers = {
     "Notion-Version": "2022-02-22"
 }
 
-def compareStr(a, b):
-    regex = re.compile(r'[^\s\w]')
-    return regex.sub('', a) == regex.sub('', b)
+class NotionPage(NamedTuple):
+    id: str
+    coverURL: str
+    iconURL: str
+    game: Game
+    anticipated: str
+    status: str
+    url: str
+    json: dict
 
-def eliminar_comas(valor):
-    if isinstance(valor, str):
-        return valor.replace(",", "")  # Reemplaza todas las comas por una cadena vacía
-    elif isinstance(valor, list):
-        return [eliminar_comas(item) for item in valor]  # Recorre la lista y aplica la función a cada elemento
-    elif isinstance(valor, dict):
-        return {key: eliminar_comas(subvalor) for key, subvalor in valor.items()}  # Recorre el diccionario y aplica la función a cada valor
-    else:
-        return valor
+def dict_to_notion_page(notion_page: dict) -> NotionPage:
+    properties = notion_page["properties"]
+
+    # Helper function to safely extract multi_select fields
+    def extract_multi_select(field: dict) -> List[str]:
+        return [item["name"] for item in field.get("multi_select", [])] if field else []
     
-def getAllPages():
-    page_count = 1
-    params = {"page_size": 100} 
-    readUrl = f"https://api.notion.com/v1/databases/{databaseID}/query"
-    pages = []
+    def extract_select(field: dict) -> str:
+        # Ensure the field is a dictionary and the "select" key exists
+        if not isinstance(field, dict) or field.get("select") is None:
+            return ""  # Return an empty string if not valid
+        return field["select"].get("name", "")
+
+    # Helper function to safely extract a number field
+    def extract_number(field: dict) -> int:
+        return field.get("number", 0) if field else 0
+
+    # Helper function to safely extract a date field
+    def extract_date(field: dict) -> str:
+        if not isinstance(field, dict) or field.get("date") is None:
+            return ""
+        return field["date"].get("start", "")
+
+    game = Game(
+        igdbId=extract_number(properties.get("IGDB ID", {})),
+        title=(properties.get("Game Title", {}).get("title", [{}])[0].get("plain_text", "") if properties.get("Game Title", {}).get("title") else ""),
+        rating=extract_number(properties.get("IGDB Rating", {})),
+        developers=extract_multi_select(properties.get("Developer", {})),
+        launchDate=extract_date(properties.get("Launch Date", {})),
+        franchises=extract_multi_select(properties.get("Franchise", {})),
+        genres=extract_multi_select(properties.get("Genre", {})),
+        platforms=extract_multi_select(properties.get("Platform", {})),
+        iconURL=notion_page.get("icon", {}).get("external", {}).get("url", "") if notion_page.get("icon") else "",
+        coverURL=notion_page.get("cover", {}).get("external", {}).get("url", "") if notion_page.get("cover") else "",
+        timeToBeat=extract_number(properties.get("HLTB", {})),
+    )
+
+    return NotionPage(
+        id=notion_page.get("id", ""),
+        coverURL=notion_page.get("cover", {}).get("external", {}).get("url", "") if notion_page.get("cover") else "",
+        iconURL=notion_page.get("icon", {}).get("external", {}).get("url", "") if notion_page.get("icon") else "",
+        game=game,
+        anticipated=extract_select(properties.get("Anticipated", {})),
+        status=extract_select(properties.get("Status", {})),
+        url=notion_page.get("url", ""),
+        json=notion_page
+    )
+
+def notion_page_to_dict(notion_page: NotionPage) -> dict:
+    def to_select(value: str) -> dict:
+        return {'select': {'name': value}} if value else None
+    def to_multi_select(value: list) -> dict:
+        return {'multi_select': [{'name': item} for item in value]} if value else None
+
+    def to_number(value: int) -> dict:
+        return {'type': 'number', 'number': value} if value else None
+
+    def to_date(value: str) -> dict:
+        return {'date': {'start': value}} if value else None
     
-    search_response = requests.request("POST", readUrl, json=params, headers=headers)
-    if search_response.ok:
-        search_response_obj = search_response.json()		
-        pages = search_response_obj.get("results")
-
-        while search_response_obj.get("has_more"):
-            page_count += 1
-            params["start_cursor"] = search_response_obj.get("next_cursor")
-            search_response = requests.request("POST", readUrl, json=params, headers=headers)
-
-            if search_response.ok:
-                search_response_obj = search_response.json()
-                pages.extend(search_response_obj.get("results"))
-
-    return pages
+    def to_title(value: str) -> dict:
+        return {'title': [{'text': {'content': value}}]} if value else None
     
-# Get all pages ended in #
-def getAllPagesTagged():
-    page_count = 1
-    params = {
-        "page_size": 100, 
-        "filter": {
-            "property": "Game Title",
-            "rich_text": {
-                "ends_with": "#"
-            }
-        }
-    } 
-    readUrl = f"https://api.notion.com/v1/databases/{databaseID}/query"
 
-    search_response = requests.request("POST", readUrl, json=params, headers=headers)
-    if search_response.ok:
-        search_response_obj = search_response.json()		
-        pages = search_response_obj.get("results")
-
-        while search_response_obj.get("has_more"):
-            page_count += 1
-            params["start_cursor"] = search_response_obj.get("next_cursor")
-            search_response = requests.request("POST", readUrl, json=params, headers=headers)
-
-            if search_response.ok:
-                search_response_obj = search_response.json()
-                pages.extend(search_response_obj.get("results"))
-
-    return pages
-
-def needsUpdate(page):
-    pageProperties = page["properties"]
-
-    return "#" in pageProperties["Game Title"]["title"][0]["text"]["content"] or not pageProperties["Developer"]["multi_select"] or not pageProperties["Launch Date"]["date"] or not pageProperties["Genre"]["multi_select"] or not pageProperties["IGDB Rating"]["number"] or not pageProperties["HLTB"]["number"] or not page["icon"] or not page["cover"] or not pageProperties["IGDB ID"]["number"]
-
-def missingFields(data):
-    return [(clave) for clave, valor in data.items() if clave!="platforms" and (valor == "" or (isinstance(valor, list) and not valor))]
-
-def getPageByTitle(title):
-    readUrl = f"https://api.notion.com/v1/databases/{databaseID}/query"
-    params = {
-        "filter": {
-            "property": "Game Title",
-            "rich_text": {
-                "equals": title
-            }
-        }
+    # Extraer el objeto Game de NotionPage
+    game = notion_page.game
+    notion_dict = {
+        'properties': {
+            key: value
+            for key, value in {
+                'IGDB ID': to_number(game.igdbId),
+                'Game Title':to_title(game.title),
+                'IGDB Rating': to_number(game.rating),
+                'Developer': to_multi_select(game.developers),
+                'Launch Date': to_date(game.launchDate),
+                'Franchise': to_multi_select(game.franchises),
+                'Genre': to_multi_select(game.genres),
+                'Platform': to_multi_select(game.platforms),
+                'HLTB': to_number(game.timeToBeat),
+                'Anticipated': to_select(notion_page.anticipated),
+                'Status': to_select(notion_page.status),
+            }.items()
+            if value is not None  # Filtra los valores que no sean None
+        },
+        'icon': {'external': {'url': notion_page.iconURL}} if notion_page.iconURL else None,
+        'cover': {'external': {'url': notion_page.coverURL}} if notion_page.coverURL else None,
     }
 
-    res = requests.request("POST", readUrl, headers=headers, json=params)
-    data = res.json()
+    return notion_dict
 
-    with open('./full-properties.json', 'w', encoding='utf8') as f:
-        json.dump(data, f, ensure_ascii=False, indent=5)
-    return data
-
-def updatePage(pageID, page, apiData, replace=False):
-    pageProperties = page["properties"]
-    newProperties = pageProperties
-    newProperties.pop("Created time")
-    
-    updateAvailable = False
-    if (replace or not pageProperties["Developer"]["multi_select"]) and apiData["developers"]:
-        newProperties["Developer"]["multi_select"] = [{'name': dev} for dev in apiData["developers"]]
-        updateAvailable = True
-    if (replace or not pageProperties["Launch Date"]["date"]) and apiData["launchDate"]:
-        newProperties["Launch Date"]["date"] = {"start": apiData["launchDate"]}
-        updateAvailable = True
-    # if replace or (not pageProperties["Platform"]["multi_select"] and apiData["platforms"]):
-    # # if apiData["platforms"]:
-    #     newProperties["Platform"]["multi_select"] = [{'name': plat} for plat in apiData["platforms"]]
-    #     updateAvailable = True
-    if (replace or not pageProperties["Franchise"]["multi_select"]) and len(apiData["franchises"])>0:
-        newProperties["Franchise"]["multi_select"] = [{'name': fran} for fran in apiData["franchises"]]
-        updateAvailable = True
-    if (replace or not pageProperties["Genre"]["multi_select"]) and apiData["genres"]:
-        newProperties["Genre"]["multi_select"] = [{'name': genre} for genre in apiData["genres"]]
-        updateAvailable = True
-    if (replace or pageProperties["IGDB Rating"]["number"]==None) and apiData["rating"]!=None:
-        newProperties["IGDB Rating"]["number"] = apiData["rating"]
-        updateAvailable = True
-    if (replace or pageProperties["IGDB ID"]["number"]==None) and apiData["igdb_id"]!=None:
-        newProperties["IGDB ID"]["number"] = apiData["igdb_id"]
-        updateAvailable = True
-    # if (replace or pageProperties["HLTB"]["number"]==None) and apiData["hltb"]!=None:
-    #     newProperties["HLTB"]["number"] = apiData["hltb"]
-    #     updateAvailable = True
-
-    updateUrl = f"https://api.notion.com/v1/pages/{pageID}"
-    updateData = {"properties": newProperties}
-
-    if (replace or not page["icon"]) and apiData["icon"]:
-        updateData["icon"] = {'type': 'external', 'external': {'url': apiData["icon"]}}
-        updateAvailable = True
-    if (replace or not page["cover"]) and apiData["cover"]:
-        updateData["cover"] = {'type': 'external', 'external': {'url': apiData["cover"]}}
-        updateAvailable = True
-    
-    if updateAvailable or "#" in pageProperties["Game Title"]["title"][0]["text"]["content"]:
-        newProperties["Game Title"]["title"] =  [{"text": {"content": apiData["title"]}}]
-        data = json.dumps(updateData)
-        response = requests.request("PATCH", updateUrl, headers=headers, data=data)
-        return [response.status_code, response.text]
+def removeComas(val):
+    if isinstance(val, str):
+        return val.replace(",", "")  # Reemplaza todas las comas por una cadena vacía
+    elif isinstance(val, list):
+        return [removeComas(item) for item in val]  # Recorre la lista y aplica la función a cada elemento
+    elif isinstance(val, dict):
+        return {key: removeComas(subvalor) for key, subvalor in val.items()}  # Recorre el diccionario y aplica la función a cada valor
+    elif hasattr(val, "_fields"):  # Comprobamos si el objeto tiene atributos como un NamedTuple
+        return val.__class__(**{field: removeComas(getattr(val, field)) for field in val._fields})  # Recursión para NamedTuple
     else:
-        return [2000, ""]
+        return val
+ 
+def generateFilterParams(status="any", lastTitleCharacter="any", title="any", amount=100):
+    params = {"page_size": amount}
 
-def processPage(page, replace=False, verbose=False, showUntouched=False, listAll=False):
-    # print('Processing {}'.format(page["properties"]["Game Title"]["title"][0]["plain_text"]))
+    filters = []
 
-    properties = page["properties"]
-    id = page["id"]
-    splitted = properties["Game Title"]["title"][0]["plain_text"].split()
-    if "#" in splitted[-1]:
-        title = " ".join(splitted[:-1])
-        lastWord = properties["Game Title"]["title"][0]["plain_text"].split()[-1]
+    if status != "any":
+        filters.append({
+            "property": "Status",
+            "select": {"equals": status}
+        })
+
+    if lastTitleCharacter != "any":
+        filters.append({
+            "property": "Game Title",
+            "rich_text": {"ends_with": lastTitleCharacter}
+        })
+
+    if title != "any":
+        filters.append({
+            "property": "Game Title",
+            "rich_text": {"equals": title}
+        })
+
+    # Añadir los filtros combinados si existen
+    if filters:
+        if len(filters) == 1:
+            params["filter"] = filters[0]  # Un solo filtro no necesita lógica de "and"
+        else:
+            params["filter"] = {"and": filters}
+
+    return params
+
+def requestPages(params):
+    page_count = 1
+    readUrl = f"https://api.notion.com/v1/databases/{databaseID}/query"
+
+    search_response = requests.request("POST", readUrl, json=params, headers=headers)
+    if search_response.ok:
+        search_response_obj = search_response.json()		
+        pages = search_response_obj.get("results")
+
+        while search_response_obj.get("has_more"):
+            page_count += 1
+            params["start_cursor"] = search_response_obj.get("next_cursor")
+            search_response = requests.request("POST", readUrl, json=params, headers=headers)
+
+            if search_response.ok:
+                search_response_obj = search_response.json()
+                pages.extend(search_response_obj.get("results"))
+
+    return [dict_to_notion_page(page) for page in pages]
+
+def needsUpdate(page: NotionPage):
+    return (
+        "#" in page.game.title
+        or not page.game.developers
+        or not page.game.launchDate
+        or not page.game.genres
+        or not page.game.rating
+        or not page.game.timeToBeat
+        or not page.iconURL
+        or not page.coverURL
+        or not page.game.igdbId
+    )
+
+def missingFields(game: Game) -> list:
+    empty_fields = []
+    
+    for field in game._fields:
+        value = getattr(game, field)
+        # Verifica si el valor está vacío o es None
+        if value == "" or value == [] or value is None:
+            empty_fields.append(field)
+    
+    return empty_fields
+
+def overwrittenFields(game1: Game, game2: Game) -> dict:
+    differences = {}
+    for field in game1._fields:
+        value1 = getattr(game1, field)
+        value2 = getattr(game2, field)
+        if value1 != value2:
+            differences[field] = (value1, value2)
+    return differences
+
+def updatePage(page:NotionPage, newGame: Game):
+    updateUrl = f"https://api.notion.com/v1/pages/{page.id}"
+    page = page._replace(game=newGame, coverURL=newGame.coverURL, iconURL=newGame.iconURL)
+    
+    data = json.dumps(notion_page_to_dict(page))
+    response = requests.patch(updateUrl, headers=headers, data=data)
+    return [response.status_code, response.text]
+
+def processPage(notionPage:NotionPage, verbose=False, listAll=False):
+    # print('Processing {}'.format(notionPage["properties"]["Game Title"]["title"][0]["plain_text"]))
+    nameSplitted = notionPage.game.title.split()
+    isNewGame = False
+
+    if "#" in nameSplitted[-1]:
+        title = " ".join(nameSplitted[:-1])
+        lastWord =  notionPage.game.title.split()[-1]
         platformWanted = lastWord[:-1] if len(lastWord)>1 else ""
+        isNewGame = True
     else:
-        title = properties["Game Title"]["title"][0]["plain_text"].replace("#","")
+        title = notionPage.game.title.replace("#","")
         platformWanted = ""
 
-    if not replace and not needsUpdate(page):
-        if showUntouched:
-            print('👍 {} already updated'.format(title))
-            if verbose:
-                print(properties)
+    spinner = Spinner()
+    spinner.start(title)
+    
+    if not isNewGame and not needsUpdate(notionPage):
+        if verbose:
+            spinner.stop("Already updated", "👍", "grey")
         return
     
-    igdb_id = properties["IGDB ID"]["number"]
-    print('igdb id: {}'.format(igdb_id))
-    apiData = igdb.searchGame(title, listAll=listAll, platformWanted=platformWanted, verbose=verbose) if igdb_id==None else igdb.searchGameById(igdb_id)
-    if not apiData:
-        print('❌ {} not found in IGDB'.format(title))
+    spinner.log(f'Searching in IGDB by {"name" if notionPage.game.igdbId==None else "id"}...', "🔍" if notionPage.game.igdbId==None else "🎯")
+    igdbGame = igdb.searchGameByTitle(title, listAll=listAll, platformWanted=platformWanted, verbose=verbose) if notionPage.game.igdbId==None else igdb.searchGameById(notionPage.game.igdbId)
+
+    if not igdbGame:
+        spinner.error("Not found in IGDB")
         return
 
-    nameDif = abs(len(apiData["title"]) - len(title))
-    print(apiData)
+   
+    nameDif = abs(len(igdbGame.title) - len(title))
     if nameDif > 2:
-        print('⚠️ Original name ({}) and found name ({}) differ by {} characters'.format(title, apiData["title"], nameDif))
+        print('⚠️ Original name ({}) and found name ({}) differ by {} characters'.format(title, igdbGame.title, nameDif))
 
-    apiData = eliminar_comas(apiData)
-    code = updatePage(id, page, apiData, replace=replace)
-    missedFields = missingFields(apiData)
+    igdbGame = removeComas(igdbGame)
+
+    
+    overwrittedFields = overwrittenFields(notionPage.game, igdbGame)
+    missedFields = missingFields(igdbGame)
+
+    if not overwrittedFields:
+        if missedFields:
+            spinner.log(f'Could not get missing fields: {missedFields}', "🌵", 'grey')
+            spinner.stop()
+            return
+        else:
+            spinner.warn("this line shouldn't be reached")
+    
+    spinner.log("Updating Notion page...")
+    code = updatePage(notionPage, igdbGame)
+
+    if overwrittedFields:
+        if missedFields and missedFields!=["franchises"]:
+            spinner.warn(f'Updated {overwrittedFields}, missing {missedFields}')
+        else:
+            spinner.log(f'Updated successfully {list(overwrittedFields.keys())}', "✔️", 'green')
+        
+        spinner.stop()
+        return
 
     if not code[0]:
-        print('❌ Unkown error updating {}'.format(title))
+        spinner.error("Unknown error")
         return
-    elif code[0]==2000:
-        if showUntouched:
-            print('🌵 {} could not get missing fields: {}'.format(title, missedFields))
-            if verbose:
-                print(apiData)
-        return
-    elif code[0]!=200:
-        print('❌ Error updating {}: {}'.format(title, code[1]))
-        return
-        
     
-    if missedFields and missedFields!=["franchises"]:
-        print('⚠️ {} -> {} updated with missing fields: {}'.format(title, apiData["title"], missedFields))
-    else:
-        print('✔️ {} -> {} updated successfully {}'.format(title, apiData["title"], "(with no franchise)" if "franchises" in missedFields else ""))
-        
-
-    if verbose:
-        print(apiData)
-
-
-
-def updateAll(replace=False, verbose=False, showUntouched=False, listAll=False):
-    pages = getAllPages()
-    count = 0
-    for page in pages:
-        processPage(page, replace=replace, verbose=verbose, listAll=listAll, showUntouched=showUntouched)
-        count += 1
-
-    print("Pages updated: ", count)
-
-def patchAll(verbose=False, showUntouched=False, listAll=False):
-    pages = getAllPages()
-    count = 0
-    for page in pages:
-        processPage(page, replace=True, verbose=verbose, listAll=listAll, showUntouched=showUntouched)
-        count += 1
-
-    print("Pages updated: ", count)
-
-def updateTitle(title, replace=False, verbose=False, showUntouched=False, listAll=False):
-    query = getPageByTitle(title)
-   
-    if not query or not "results" in query or not query["results"]:
-        print('⚠️ {} not found in database'.format(title))
+    if code[0]!=200:
+        spinner.error(f'Got error {code[1]} from Notion')
         return
-
-    processPage(query["results"][0], replace=replace, verbose=verbose, listAll=listAll, showUntouched=showUntouched)
         
+    if verbose:
+        print(igdbGame)
 
-def listen(replace=False, verbose=False, showUntouched=False, listAll=False):
-    while True:
-        for i in range(5):  
-            pages = getAllPagesTagged()
-
-            if pages:
-                for page in pages:
-                    processPage(page, replace=replace, verbose=verbose, listAll=listAll, showUntouched=showUntouched)
-
-            time.sleep(1)
-        
-        print("Listening...")
+def processPages(filterParams, verbose=False, listAll=False):
+    pages = requestPages(filterParams)
+    
+    if not pages or len(pages)==0:
+        print(f'⚠️ Notion returned 0 results for your filter')
+        return
+    
+    for page,i in pages:
+        print(i)
+        processPage(page, verbose=verbose, listAll=listAll)
+    
+    print(f'{len(pages)} pages processed')

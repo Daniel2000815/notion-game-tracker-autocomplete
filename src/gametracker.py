@@ -1,7 +1,7 @@
 import getopt, sys
 import notion
 import argparse
-
+import time
 
 def printHelp():
     print("python3 gametracker.py")
@@ -38,18 +38,21 @@ try:
     TITLE = args.title
 
 
+    
     if MODE=="watch":
         print('== WATCHING FOR TITLES ENDING IN # {} =='.format("(FORCING REPLACE)" if REPLACE else ""))
-        notion.listen(replace=REPLACE, verbose=VERBOSE, showUntouched=UNTOUCHED, listAll=LIST)
+        while True:
+            for i in range(5):  
+                notion.processPages(notion.generateFilterParams(lastTitleCharacter="#"), verbose=VERBOSE, listAll=LIST)
+                time.sleep(1)
+            
+            print("Listening...")
     elif MODE=="one":
         print('== TRYING TO UPDATE {} {} =='.format(TITLE, "(FORCING REPLACE)" if REPLACE else ""))
-        notion.updateTitle(TITLE, replace=REPLACE, verbose=VERBOSE, showUntouched=UNTOUCHED, listAll=LIST)
+        notion.processPages(notion.generateFilterParams(title=TITLE, amount=1), verbose=VERBOSE, listAll=LIST)
     elif MODE=="all":
         print('== TRYING TO UPDATE ALL TITLES {} =='.format("(FORCING REPLACE)" if REPLACE else ""))
-        notion.updateAll(replace=REPLACE, verbose=VERBOSE, showUntouched=UNTOUCHED, listAll=LIST)
-    elif MODE=="patch":
-        print('== TRYING TO PATCH ALL TITLES ==')
-        notion.updateAll(replace=REPLACE, verbose=VERBOSE, showUntouched=UNTOUCHED, listAll=LIST)
+        notion.processPages(notion.generateFilterParams(), verbose=VERBOSE, listAll=LIST)
     else:
         printHelp()
     
