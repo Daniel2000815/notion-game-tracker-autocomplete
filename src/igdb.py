@@ -21,6 +21,27 @@ class Game(NamedTuple):
     coverURL: str
     timeToBeat: float
 
+    def missingFields(self) -> list:
+        empty_fields = []
+        
+        for field in self._fields:
+            value = getattr(self, field)
+
+            if value == "" or value == [] or value is None:
+                empty_fields.append(field)
+        
+        return empty_fields
+    
+    def overwrittenFields(self, other: "Game") -> dict:
+        differences = {}
+        for field in self._fields:
+            value1 = getattr(self, field)
+            value2 = getattr(other, field)
+            if value1 != value2:
+                differences[field] = (value1, value2)
+                
+        return differences
+
 load_dotenv()
 
 id = os.getenv('IGDB_ID')

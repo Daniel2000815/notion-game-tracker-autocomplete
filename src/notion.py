@@ -3,6 +3,7 @@ from dotenv import load_dotenv
 from igdb import Game
 from typing import NamedTuple, List
 from spinner import Spinner
+from utils import removeComas
 
 load_dotenv()
 
@@ -15,6 +16,22 @@ headers = {
     "Notion-Version": "2022-02-22"
 }
 
+to_notion_field = {
+    'select':           lambda value: {'select': {'name': value}}                           if value else None,
+    'multi_select':     lambda value: {'multi_select': [{'name': item} for item in value]}  if value else None,
+    'number':           lambda value: {'type': 'number', 'number': value}                   if value else None,
+    'date':             lambda value: {'date': {'start': value}}                            if value else None,
+    'title':            lambda value: {'title': [{'text': {'content': value}}]}             if value else None
+}
+
+from_notion_field = {
+    'multi_select': lambda field: [item["name"] for item in field.get("multi_select", [])] if field else [],
+    'select':       lambda field: field["select"].get("name", "") if isinstance(field, dict) and field.get("select") else "",
+    'number':       lambda field: field.get("number", 0) if field else 0,
+    'date':         lambda field: field["date"].get("start", "") if isinstance(field, dict) and field.get("date") else "",
+    'title':        lambda field: field.get("title", [{}])[0].get("plain_text", "") if field.get("title") else ""
+}
+
 class NotionPage(NamedTuple):
     id: str
     coverURL: str
@@ -25,281 +42,175 @@ class NotionPage(NamedTuple):
     url: str
     json: dict
 
-def dict_to_notion_page(notion_page: dict) -> NotionPage:
-    properties = notion_page["properties"]
+    @classmethod
+    def from_dict(cls, data: dict) -> "NotionPage":
+        properties = data["properties"]
 
-    # Helper function to safely extract multi_select fields
-    def extract_multi_select(field: dict) -> List[str]:
-        return [item["name"] for item in field.get("multi_select", [])] if field else []
+        game = Game(
+            igdbId=from_notion_field["number"](properties.get("IGDB ID", {})),
+            title=from_notion_field["title"] (properties.get("Game Title", {})),
+            rating=from_notion_field["number"](properties.get("IGDB Rating", {})),
+            developers=from_notion_field["multi_select"](properties.get("Developer", {})),
+            launchDate=from_notion_field["date"](properties.get("Launch Date", {})),
+            franchises=from_notion_field["multi_select"](properties.get("Franchise", {})),
+            genres=from_notion_field["multi_select"](properties.get("Genre", {})),
+            platforms=from_notion_field["multi_select"](properties.get("Platform", {})),
+            iconURL=data.get("icon", {}).get("external", {}).get("url", "") if data.get("icon") else "",
+            coverURL=data.get("cover", {}).get("external", {}).get("url", "") if data.get("cover") else "",
+            timeToBeat=from_notion_field["number"](properties.get("HLTB", {})),
+        )
+
+        return cls(
+            id=data.get("id", ""),
+            coverURL=data.get("cover", {}).get("external", {}).get("url", "") if data.get("cover") else "",
+            iconURL=data.get("icon", {}).get("external", {}).get("url", "") if data.get("icon") else "",
+            game=game,
+            anticipated=from_notion_field["select"](properties.get("Anticipated", {})),
+            status=from_notion_field["select"](properties.get("Status", {})),
+            url=data.get("url", ""),
+            json=data
+        )
     
-    def extract_select(field: dict) -> str:
-        # Ensure the field is a dictionary and the "select" key exists
-        if not isinstance(field, dict) or field.get("select") is None:
-            return ""  # Return an empty string if not valid
-        return field["select"].get("name", "")
-
-    # Helper function to safely extract a number field
-    def extract_number(field: dict) -> int:
-        return field.get("number", 0) if field else 0
-
-    # Helper function to safely extract a date field
-    def extract_date(field: dict) -> str:
-        if not isinstance(field, dict) or field.get("date") is None:
-            return ""
-        return field["date"].get("start", "")
-
-    game = Game(
-        igdbId=extract_number(properties.get("IGDB ID", {})),
-        title=(properties.get("Game Title", {}).get("title", [{}])[0].get("plain_text", "") if properties.get("Game Title", {}).get("title") else ""),
-        rating=extract_number(properties.get("IGDB Rating", {})),
-        developers=extract_multi_select(properties.get("Developer", {})),
-        launchDate=extract_date(properties.get("Launch Date", {})),
-        franchises=extract_multi_select(properties.get("Franchise", {})),
-        genres=extract_multi_select(properties.get("Genre", {})),
-        platforms=extract_multi_select(properties.get("Platform", {})),
-        iconURL=notion_page.get("icon", {}).get("external", {}).get("url", "") if notion_page.get("icon") else "",
-        coverURL=notion_page.get("cover", {}).get("external", {}).get("url", "") if notion_page.get("cover") else "",
-        timeToBeat=extract_number(properties.get("HLTB", {})),
-    )
-
-    return NotionPage(
-        id=notion_page.get("id", ""),
-        coverURL=notion_page.get("cover", {}).get("external", {}).get("url", "") if notion_page.get("cover") else "",
-        iconURL=notion_page.get("icon", {}).get("external", {}).get("url", "") if notion_page.get("icon") else "",
-        game=game,
-        anticipated=extract_select(properties.get("Anticipated", {})),
-        status=extract_select(properties.get("Status", {})),
-        url=notion_page.get("url", ""),
-        json=notion_page
-    )
-
-def notion_page_to_dict(notion_page: NotionPage) -> dict:
-    def to_select(value: str) -> dict:
-        return {'select': {'name': value}} if value else None
-    def to_multi_select(value: list) -> dict:
-        return {'multi_select': [{'name': item} for item in value]} if value else None
-
-    def to_number(value: int) -> dict:
-        return {'type': 'number', 'number': value} if value else None
-
-    def to_date(value: str) -> dict:
-        return {'date': {'start': value}} if value else None
+    def needsUpdate(self):
+        return (
+            "#" in self.game.title
+            or not self.game.developers
+            or not self.game.launchDate
+            or not self.game.genres
+            or not self.game.rating
+            or not self.game.timeToBeat
+            or not self.iconURL
+            or not self.coverURL
+            or not self.game.igdbId
+        )
     
-    def to_title(value: str) -> dict:
-        return {'title': [{'text': {'content': value}}]} if value else None
+    def to_dict(self) -> dict:
+        # Extraer el objeto Game de NotionPage
+        game = self.game
+        notion_dict = {
+            'properties': {
+                key: value
+                for key, value in {
+                    'IGDB ID': to_notion_field["number"](game.igdbId),
+                    'Game Title':to_notion_field["title"](game.title),
+                    'IGDB Rating': to_notion_field["number"](game.rating),
+                    'Developer': to_notion_field["multi_select"](game.developers),
+                    'Launch Date': to_notion_field["date"](game.launchDate),
+                    'Franchise': to_notion_field["multi_select"](game.franchises),
+                    'Genre': to_notion_field["multi_select"](game.genres),
+                    'Platform': to_notion_field["multi_select"](game.platforms),
+                    'HLTB': to_notion_field["number"](game.timeToBeat),
+                    'Anticipated': to_notion_field["select"](self.anticipated),
+                    'Status': to_notion_field["select"](self.status),
+                }.items()
+                if value is not None 
+            },
+            'icon': {'external': {'url': self.iconURL}} if self.iconURL else None,
+            'cover': {'external': {'url': self.coverURL}} if self.coverURL else None,
+        }
+
+        return notion_dict
     
+    def update(self, newGame: Game):
+        updateUrl = f"https://api.notion.com/v1/pages/{self.id}"
+        self = self._replace(game=newGame, coverURL=newGame.coverURL, iconURL=newGame.iconURL)
+        
+        data = json.dumps(self.to_dict())
+        response = requests.patch(updateUrl, headers=headers, data=data)
+        return [response.status_code, response.text]
+    
+    def process(self, verbose=False, listAll=False):
+        # print('Processing {}'.format(notionPage["properties"]["Game Title"]["title"][0]["plain_text"]))
+        nameSplitted = self.game.title.split()
+        isNewGame = False
 
-    # Extraer el objeto Game de NotionPage
-    game = notion_page.game
-    notion_dict = {
-        'properties': {
-            key: value
-            for key, value in {
-                'IGDB ID': to_number(game.igdbId),
-                'Game Title':to_title(game.title),
-                'IGDB Rating': to_number(game.rating),
-                'Developer': to_multi_select(game.developers),
-                'Launch Date': to_date(game.launchDate),
-                'Franchise': to_multi_select(game.franchises),
-                'Genre': to_multi_select(game.genres),
-                'Platform': to_multi_select(game.platforms),
-                'HLTB': to_number(game.timeToBeat),
-                'Anticipated': to_select(notion_page.anticipated),
-                'Status': to_select(notion_page.status),
-            }.items()
-            if value is not None  # Filtra los valores que no sean None
-        },
-        'icon': {'external': {'url': notion_page.iconURL}} if notion_page.iconURL else None,
-        'cover': {'external': {'url': notion_page.coverURL}} if notion_page.coverURL else None,
-    }
-
-    return notion_dict
-
-def removeComas(val):
-    if isinstance(val, str):
-        return val.replace(",", "")  # Reemplaza todas las comas por una cadena vacía
-    elif isinstance(val, list):
-        return [removeComas(item) for item in val]  # Recorre la lista y aplica la función a cada elemento
-    elif isinstance(val, dict):
-        return {key: removeComas(subvalor) for key, subvalor in val.items()}  # Recorre el diccionario y aplica la función a cada valor
-    elif hasattr(val, "_fields"):  # Comprobamos si el objeto tiene atributos como un NamedTuple
-        return val.__class__(**{field: removeComas(getattr(val, field)) for field in val._fields})  # Recursión para NamedTuple
-    else:
-        return val
- 
-def generateFilterParams(status="any", lastTitleCharacter="any", title="any", amount=100):
-    params = {"page_size": amount}
-
-    filters = []
-
-    if status != "any":
-        filters.append({
-            "property": "Status",
-            "select": {"equals": status}
-        })
-
-    if lastTitleCharacter != "any":
-        filters.append({
-            "property": "Game Title",
-            "rich_text": {"ends_with": lastTitleCharacter}
-        })
-
-    if title != "any":
-        filters.append({
-            "property": "Game Title",
-            "rich_text": {"equals": title}
-        })
-
-    # Añadir los filtros combinados si existen
-    if filters:
-        if len(filters) == 1:
-            params["filter"] = filters[0]  # Un solo filtro no necesita lógica de "and"
+        if "#" in nameSplitted[-1]:
+            title = " ".join(nameSplitted[:-1])
+            lastWord =  self.game.title.split()[-1]
+            platformWanted = lastWord[:-1] if len(lastWord)>1 else ""
+            isNewGame = True
         else:
-            params["filter"] = {"and": filters}
+            title = self.game.title.replace("#","")
+            platformWanted = ""
 
-    return params
+        spinner = Spinner()
+        spinner.start(title)
+        
+        if not isNewGame and not self.needsUpdate():
+            if verbose:
+                spinner.stop("Already updated", "👍", "grey")
+            return
+        
+        spinner.log(f'Searching in IGDB by {"name" if self.game.igdbId==None else "id"}...', "🔍" if self.game.igdbId==None else "🎯")
+        igdbGame = igdb.searchGameByTitle(title, listAll=listAll, platformWanted=platformWanted, verbose=verbose) if self.game.igdbId==None else igdb.searchGameById(self.game.igdbId)
 
-def requestPages(params):
-    page_count = 1
+        if not igdbGame:
+            spinner.error("Not found in IGDB")
+            return
+
+    
+        nameDif = abs(len(igdbGame.title) - len(title))
+        if nameDif > 2:
+            print('⚠️ Original name ({}) and found name ({}) differ by {} characters'.format(title, igdbGame.title, nameDif))
+
+        igdbGame = removeComas(igdbGame)
+
+        
+        overwrittedFields = self.game.overwrittenFields(igdbGame)
+        missedFields = igdbGame.missingFields()
+
+        if not overwrittedFields:
+            if missedFields:
+                spinner.log(f'Could not get missing fields: {missedFields}', "🌵", 'grey')
+                spinner.stop()
+                return
+            else:
+                spinner.warn("this line shouldn't be reached")
+        
+        spinner.log("Updating Notion page...")
+        code = self.update(igdbGame)
+
+        if overwrittedFields:
+            if any(p in ["IGDB_ID", "Game Title"] for p in overwrittedFields):
+                spinner.warn(f'Overwritten: {list(overwrittedFields.keys()) if not verbose else overwrittedFields}, missing {missedFields}')
+
+            elif missedFields and missedFields!=["franchises"]:
+                spinner.warn(f'Updated {list(overwrittedFields.keys()) if not verbose else overwrittedFields}, missing {missedFields}')
+            else:
+                spinner.log(f'Updated successfully {list(overwrittedFields.keys()) if not verbose else overwrittedFields}', "✔️", 'green')
+            
+            spinner.stop()
+            return
+
+        if not code[0]:
+            spinner.error("Unknown error")
+            return
+        
+        if code[0]!=200:
+            spinner.error(f'Got error {code[1]} from Notion')
+            return
+            
+        if verbose:
+            print(igdbGame)
+
+
+def processPages(params, verbose=False, listAll=False):
     readUrl = f"https://api.notion.com/v1/databases/{databaseID}/query"
+    pages = []
 
-    search_response = requests.request("POST", readUrl, json=params, headers=headers)
-    if search_response.ok:
+    while True:
+        search_response = requests.request("POST", readUrl, json=params, headers=headers)
+
+        if not search_response.ok:
+            raise Exception(f"Failed to fetch pages: {search_response.status_code} - {search_response.text}")
+        
         search_response_obj = search_response.json()		
         pages = search_response_obj.get("results")
 
-        while search_response_obj.get("has_more"):
-            page_count += 1
-            params["start_cursor"] = search_response_obj.get("next_cursor")
-            search_response = requests.request("POST", readUrl, json=params, headers=headers)
+        for page in pages:
+            NotionPage.from_dict(page).process(verbose=verbose, listAll=listAll)
 
-            if search_response.ok:
-                search_response_obj = search_response.json()
-                pages.extend(search_response_obj.get("results"))
+        if not search_response_obj.get("has_more"):
+            break
 
-    return [dict_to_notion_page(page) for page in pages]
-
-def needsUpdate(page: NotionPage):
-    return (
-        "#" in page.game.title
-        or not page.game.developers
-        or not page.game.launchDate
-        or not page.game.genres
-        or not page.game.rating
-        or not page.game.timeToBeat
-        or not page.iconURL
-        or not page.coverURL
-        or not page.game.igdbId
-    )
-
-def missingFields(game: Game) -> list:
-    empty_fields = []
-    
-    for field in game._fields:
-        value = getattr(game, field)
-        # Verifica si el valor está vacío o es None
-        if value == "" or value == [] or value is None:
-            empty_fields.append(field)
-    
-    return empty_fields
-
-def overwrittenFields(game1: Game, game2: Game) -> dict:
-    differences = {}
-    for field in game1._fields:
-        value1 = getattr(game1, field)
-        value2 = getattr(game2, field)
-        if value1 != value2:
-            differences[field] = (value1, value2)
-    return differences
-
-def updatePage(page:NotionPage, newGame: Game):
-    updateUrl = f"https://api.notion.com/v1/pages/{page.id}"
-    page = page._replace(game=newGame, coverURL=newGame.coverURL, iconURL=newGame.iconURL)
-    
-    data = json.dumps(notion_page_to_dict(page))
-    response = requests.patch(updateUrl, headers=headers, data=data)
-    return [response.status_code, response.text]
-
-def processPage(notionPage:NotionPage, verbose=False, listAll=False):
-    # print('Processing {}'.format(notionPage["properties"]["Game Title"]["title"][0]["plain_text"]))
-    nameSplitted = notionPage.game.title.split()
-    isNewGame = False
-
-    if "#" in nameSplitted[-1]:
-        title = " ".join(nameSplitted[:-1])
-        lastWord =  notionPage.game.title.split()[-1]
-        platformWanted = lastWord[:-1] if len(lastWord)>1 else ""
-        isNewGame = True
-    else:
-        title = notionPage.game.title.replace("#","")
-        platformWanted = ""
-
-    spinner = Spinner()
-    spinner.start(title)
-    
-    if not isNewGame and not needsUpdate(notionPage):
-        if verbose:
-            spinner.stop("Already updated", "👍", "grey")
-        return
-    
-    spinner.log(f'Searching in IGDB by {"name" if notionPage.game.igdbId==None else "id"}...', "🔍" if notionPage.game.igdbId==None else "🎯")
-    igdbGame = igdb.searchGameByTitle(title, listAll=listAll, platformWanted=platformWanted, verbose=verbose) if notionPage.game.igdbId==None else igdb.searchGameById(notionPage.game.igdbId)
-
-    if not igdbGame:
-        spinner.error("Not found in IGDB")
-        return
-
-   
-    nameDif = abs(len(igdbGame.title) - len(title))
-    if nameDif > 2:
-        print('⚠️ Original name ({}) and found name ({}) differ by {} characters'.format(title, igdbGame.title, nameDif))
-
-    igdbGame = removeComas(igdbGame)
-
-    
-    overwrittedFields = overwrittenFields(notionPage.game, igdbGame)
-    missedFields = missingFields(igdbGame)
-
-    if not overwrittedFields:
-        if missedFields:
-            spinner.log(f'Could not get missing fields: {missedFields}', "🌵", 'grey')
-            spinner.stop()
-            return
-        else:
-            spinner.warn("this line shouldn't be reached")
-    
-    spinner.log("Updating Notion page...")
-    code = updatePage(notionPage, igdbGame)
-
-    if overwrittedFields:
-        if missedFields and missedFields!=["franchises"]:
-            spinner.warn(f'Updated {overwrittedFields}, missing {missedFields}')
-        else:
-            spinner.log(f'Updated successfully {list(overwrittedFields.keys())}', "✔️", 'green')
-        
-        spinner.stop()
-        return
-
-    if not code[0]:
-        spinner.error("Unknown error")
-        return
-    
-    if code[0]!=200:
-        spinner.error(f'Got error {code[1]} from Notion')
-        return
-        
-    if verbose:
-        print(igdbGame)
-
-def processPages(filterParams, verbose=False, listAll=False):
-    pages = requestPages(filterParams)
-    
-    if not pages or len(pages)==0:
-        print(f'⚠️ Notion returned 0 results for your filter')
-        return
-    
-    for page,i in pages:
-        print(i)
-        processPage(page, verbose=verbose, listAll=listAll)
-    
-    print(f'{len(pages)} pages processed')
+        params["start_cursor"] = search_response_obj.get("next_cursor")
