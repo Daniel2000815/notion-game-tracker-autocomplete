@@ -15,8 +15,8 @@ class Spinner:
             self.halo = Halo(text="", spinner='dots')
             self.prefix = ""  # Inicializamos el prefijo vacío
 
-    def start(self, prefixText=""):
-        self.prefix = prefixText
+    def start(self, prefix_text=""):
+        self.prefix = prefix_text
         self.halo.start(f'{self.prefix} Loading...')
 
     def resume(self, text, emoji="", color="white"):
@@ -43,5 +43,5 @@ class Spinner:
         self.halo.color = color
         self.halo.text = f'{emoji}{"  " if emoji else ""}{self.prefix}. {text}'
 
-    def set_prefix(self, prefixText):
-        self.prefix = prefixText  # Permite actualizar el prefijo sin iniciar el spinner
+    def set_prefix(self, prefix_text):
+        self.prefix = prefix_text  # Permite actualizar el prefijo sin iniciar el spinner

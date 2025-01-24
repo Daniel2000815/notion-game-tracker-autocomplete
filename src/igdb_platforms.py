@@ -1,3 +1,6 @@
+"""
+Map of IGDB platform ID and name
+"""
 platforms = {
     3: "Linux",
     4: "Nintendo 64",

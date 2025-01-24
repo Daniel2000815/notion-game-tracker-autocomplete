@@ -1,74 +1,112 @@
-import getopt, sys
+"""
+Main module. Parses the program arguments and calls the notion module with those.
+"""
+
+import sys
+import time
+import argparse
+
 import notion
 import notion_filter
-import argparse
-import time
 
-def printHelp():
-    print("python3 gametracker.py")
-    for i in range(0, len(helps)):
-        print('\t-{}, --{}:\t {}'.format(options[i], long_options[i], helps[i]))
+parser = argparse.ArgumentParser(description="Update games based on mode and options.")
 
-argumentList = sys.argv[1:]
-options = "lvmtf:"
-long_options = ["list-all", "verbose", "mode", "title", "filter"]
-helps = [
-    "Choose between all posibble matches",
-    "Show updated values",
-    "Choose exec mode:\n\t watch: look for new entries to update in database ending in '#'\n\t one: update database entry with title [--title]\n\t all: update all",
-    "Title to find when using mode=one",
-    "Filter options: <property_name>:<filter_action>:<property_value>"
-]
-actions = ["store_true", "store_true", "store", "store", "append"]
-defaults = [False, False, "watch", "", []]
-parser = argparse.ArgumentParser()
+# Positional argument for mode
+parser.add_argument(
+    "mode",
+    help="How games to update will be selected",
+    choices=["create", "all", "title", "id", "watch"]
+)
 
-for i in range(0, len(helps)):
-    parser.add_argument('-{}'.format(options[i]), '--{}'.format(long_options[i]), help = helps[i], action=actions[i], default=defaults[i])
-    
-args = parser.parse_args()
+# Optional arguments
+parser.add_argument(
+    "-l", "--list-all",
+    help="Choose between all possible matches",
+    action="store_true"
+)
+parser.add_argument("-v", "--verbose", help="Verbose mode", action="store_true")
+parser.add_argument(
+    "-f", "--filter",
+    help="Filter options: <property_name>:<filter_action>:<property_value>",
+    action="append"
+)
+
+# Parse arguments
+args, remaining_args = parser.parse_known_args()
+
+LIST = args.list_all
+VERBOSE = args.verbose
+FILTERS = []
+
+if args.filter:
+    for filter_str in args.filter:
+        parts = filter_str.split(':')
+
+        if len(parts) == 3:
+            property_name, filter_action, property_value = parts
+            FILTERS.append(
+                notion_filter.new_filter(property_name, filter_action, property_value)
+            )
+        else:
+            print(f"Invalid filter format: {filter_str}. Use <name>:<action>:<value>")
 
 try:
-    arguments, values = getopt.getopt(argumentList, options, long_options)
-    LIST = args.list_all
-    VERBOSE = args.verbose
-    MODE = args.mode
-    TITLE = args.title
-    FILTERS = []
-
-    if args.filter:
-        for filter_str in args.filter:
-            parts = filter_str.split(':')
-
-            if len(parts) == 3:
-                property_name, filter_action, property_value = parts
-                filter = notion_filter.newFilter(property_name, filter_action, property_value)
-
-                FILTERS.append(filter)
-            else:
-                print(f"Invalid filter format: {filter_str}. Use <property_type>:<property_name>:<filter_action>:<property_value>")
-
-    if MODE=="watch":
-        print('== WATCHING FOR TITLES ENDING IN #')
-        FILTERS.append(notion_filter.newFilter("Game Title", "ends_with", "#"))
-        notion_filter.generateFilterParams(FILTERS)
+    if args.mode == "watch":
+        print('== WATCHING FOR TITLES ENDING IN # ==')
+        FILTERS.append(notion_filter.new_filter("Game Title", "ends_with", "#"))
         while True:
-            for i in range(5):  
-                notion.processPages(notion_filter.generateFilterParams(FILTERS), verbose=VERBOSE, listAll=LIST)
+            for i in range(5):
+                notion.update_pages(
+                    notion_filter.generate_filter_params(FILTERS),
+                    verbose=VERBOSE,
+                    list_all=LIST
+                )
                 time.sleep(1)
-            
+
             print("Listening...")
-    elif MODE=="one":
-        print('== TRYING TO UPDATE {} {} ==')
-        FILTERS.append(notion_filter.newFilter("Game Title", "equals", TITLE))
-        print(notion_filter.generateFilterParams(FILTERS))
-        notion.processPages(notion_filter.generateFilterParams(FILTERS), verbose=VERBOSE, listAll=LIST)
-    elif MODE=="all":
-        print('== TRYING TO UPDATE ALL TITLES {} ==')
-        print(notion_filter.generateFilterParams(FILTERS))
-        notion.processPages(notion_filter.generateFilterParams(FILTERS), verbose=VERBOSE, listAll=LIST)
+
+    if args.mode == "title":
+        if not remaining_args:
+            parser.error("The 'title' mode requires a title argument.")
+
+        title = remaining_args[0]
+        print(f'== TRYING TO UPDATE {title} ==')
+        FILTERS.append(notion_filter.new_filter("Game Title", "equals", title))
+        notion.update_pages(
+            notion_filter.generate_filter_params(FILTERS),
+            verbose=VERBOSE,
+            list_all=LIST
+        )
+    elif args.mode == "create":
+        if not remaining_args:
+            parser.error("The 'create' mode requires a title argument.")
+
+        title = remaining_args[0]
+        print(f'== TRYING TO CREATE {title} ==')
+        notion.create_page(title, "Wishlist")
+    elif args.mode == "id":
+        if not remaining_args:
+            parser.error("The 'id' mode requires an ID argument.")
+        game_id = remaining_args[0]
+        print(f'== TRYING TO UPDATE GAME WITH ID {game_id} ==')
+        FILTERS.append(notion_filter.new_filter("IGDB ID", "equals", game_id))
+        notion.update_pages(
+            notion_filter.generate_filter_params(FILTERS),
+            verbose=VERBOSE,
+            list_all=LIST
+        )
+
+    elif args.mode == "all":
+        print('== TRYING TO UPDATE ALL TITLES ==')
+        notion.update_pages(
+            notion_filter.generate_filter_params(FILTERS),
+            verbose=VERBOSE,
+            list_all=LIST
+        )
+
     else:
-        printHelp()
-    
-except getopt.error as err:
-    print (str(err))
+        parser.print_help()
+
+except KeyboardInterrupt:
+    print("\nExiting...")
+    sys.exit(0)
