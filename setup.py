@@ -5,7 +5,7 @@ with open("requirements.txt") as f:
 
 setup(
     name="notion_gametracker",
-    version="0.1.0",
+    version="0.2.beta",
     packages=find_packages(where="src"),
     package_dir={"": "src"},
     install_requires=required,
