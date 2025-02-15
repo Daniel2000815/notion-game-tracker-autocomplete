@@ -1,4 +1,0 @@
-howlongtobeatpy
-requests
-python-dotenv
-halo

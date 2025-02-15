@@ -1,5 +1,6 @@
 *.env
 *.json
-*pycache
+**pycache
 src/.env
 src/__pycache__/
+gametracker.egg-info/

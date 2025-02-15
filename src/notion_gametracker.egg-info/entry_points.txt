@@ -1,0 +1,2 @@
+[console_scripts]
+notion_gametracker = notion_gametracker.notion_gametracker:main

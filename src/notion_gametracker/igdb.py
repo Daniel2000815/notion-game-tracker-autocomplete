@@ -1,23 +1,12 @@
-"""
-This modules defines the Game type, allows to search titles
-in IGDB by name or ID and automatically handles token updates
-"""
-
-from datetime import datetime
+from datetime import datetime, timezone
 import os
-import sys
 from typing import NamedTuple, List
 import difflib
 
 from dotenv import load_dotenv
 import requests
-from spinner import Spinner
-import hltb
-
-class TokenRenewalError(Exception):
-    """
-    Exception raised when an error occurs during the renewal of an authentication token.
-    """
+from notion_gametracker.spinner import Spinner
+from notion_gametracker import hltb
 
 
 class Game(NamedTuple):
@@ -61,6 +50,9 @@ class Game(NamedTuple):
             if getattr(self, field) != getattr(other, field)
         }
 
+    def to_json(self):
+        return self._asdict()
+
 load_dotenv()
 IGDB_ID = os.getenv('IGDB_ID')
 IGDB_TOKEN = os.getenv('IGDB_TOKEN')
@@ -75,12 +67,24 @@ headers = {
     "Content-Type": "application/json",
 }
 
-def data_from_query(query, user_title="")->Game:
+class IGDBError(Exception):
+    """Base exception for IGDB-related errors."""
+    pass
+
+class TokenRenewalError(IGDBError):
+    """Raised when token renewal fails."""
+    pass
+
+class RequestTimeoutError(IGDBError):
+    """Raised when a request times out."""
+    pass
+
+def __data_from_query__(query, user_title="")->Game:
     """
     Create a Game instance given a query result from IGDB
     """
     date = (
-        datetime.utcfromtimestamp(query.get("first_release_date", 0)).strftime('%Y-%m-%d')
+        datetime.fromtimestamp(query.get("first_release_date", 0), timezone.utc).strftime('%Y-%m-%d')
         if "first_release_date" in query
         else ""
     )
@@ -91,7 +95,7 @@ def data_from_query(query, user_title="")->Game:
         else ""
     )
 
-    screenshots_urls = ([
+    screenshots_urls = ([ 
         f'https://images.igdb.com/igdb/image/upload/t_1080p/{shot["image_id"]}.png'
         for shot in query.get("screenshots", [])[:1]
     ])
@@ -100,7 +104,7 @@ def data_from_query(query, user_title="")->Game:
     franchises = [fran["name"] for fran in query.get("franchises", [])]
     genres = [genre["name"] for genre in query.get("genres", [])]
     platforms = [platform["name"] for platform in query.get("platforms", [])]
-    developers = ([
+    developers = ([ 
         dev["company"]["name"]
         for dev in query.get("involved_companies", [])
         if dev.get("developer")
@@ -116,14 +120,13 @@ def data_from_query(query, user_title="")->Game:
         genres, platforms, icon_url, cover_url, time_to_beat
     )
 
-def update_env_variable(file_path: str, variable_name: str, new_value: str) -> bool:
+def __update_env_variable__(file_path: str, variable_name: str, new_value: str):
     """
     Updates the value of a variable in a .env file.
 
     :param file_path: Path to the .env file.
     :param variable_name: Name of the variable to modify.
     :param new_value: New value for the variable.
-    :return: True if the update was successful, False otherwise.
     """
     try:
         # Read the file and save the lines
@@ -140,18 +143,12 @@ def update_env_variable(file_path: str, variable_name: str, new_value: str) -> b
                 else:
                     file.write(line)
 
-        print(f"Variable '{variable_name}' updated successfully.")
-        return True
-
     except FileNotFoundError:
-        print(f"File {file_path} doesn't exist.")
+        raise FileNotFoundError(f"File {file_path} doesn't exist.")
     except OSError as e:
-        print(f"OS error occurred: {e}")
+        raise OSError(f"Error occurred: {e}")
 
-    return False
-
-
-def renew_token() -> bool:
+def __renew_token__():
     """
     Renew IGDB token using IGDB_ID and IGDB_SECRET
     and save it in env file
@@ -168,25 +165,25 @@ def renew_token() -> bool:
             base_url + params,
             timeout=10
         ).json()
-    except requests.exceptions.Timeout as exc:
-        raise TokenRenewalError("Token renewal request timed out.") from exc
+    except requests.exceptions.Timeout:
+        raise RequestTimeoutError("Token renewal request timed out.")
 
     if "access_token" not in response:
         raise TokenRenewalError("Failed to obtain access token.")
 
-    return update_env_variable('.env', 'IGDB_TOKEN', response["access_token"])
+    __update_env_variable__('.env', 'IGDB_TOKEN', response["access_token"])
 
 def make_igdb_request(search_clause: str) -> dict:
     """
     Makes a POST request to the IGDB API and returns the response.
 
     :param search_clause: Clause for filtering the search.
-    :return: A dictionary containing the API response, or an 
+    :return: A dictionary containing the API response, or an
     empty dictionary in case of an error or timeout.
     """
     if not search_clause:
-        print("No search clause provided for IGDB request")
-        return {}
+        raise ValueError("No search clause provided for IGDB request")
+
     fields = [
         "id", "artworks", "cover.image_id", "first_release_date",
         "franchises.name", "genres.name", "involved_companies.company.name",
@@ -203,29 +200,24 @@ def make_igdb_request(search_clause: str) -> dict:
             timeout=10
         ).json()
     except requests.exceptions.Timeout:
-        return {}
+        raise RequestTimeoutError("IGDB search request timeout")
 
     if "message" in response and "Authorization" in response["message"]:
-        if renew_token():
-            print("IGDB token updated. Retrying...")
-            return make_igdb_request(data)
-        print("Error updating IGDB token.")
-        sys.exit(1)
+        __renew_token__()
+        return make_igdb_request(data)
+
+    if len(response) == 0 or ("status" in response[0] and response[0]["status"]!=200) or "id" not in response[0]:
+        raise ValueError("IGDB game not found")
 
     return response
 
-def search_game_by_id(igdb_id)->Game:
+def search_game_by_id(igdb_id: int) -> Game:
     """
     Return Game instance given the game ID in IGDB
     """
-
+    
     response = make_igdb_request(f'where id={igdb_id}')
-
-    if len(response) == 0 or not response[0]["id"]:
-        return {}
-
-    return data_from_query(response[0])
-
+    return __data_from_query__(response[0])
 
 def search_game_by_title(title, list_all=True, platform_wanted="")->Game:
     """
@@ -241,12 +233,12 @@ def search_game_by_title(title, list_all=True, platform_wanted="")->Game:
     :rtype: Game
     """
 
-    response = make_igdb_request(f'search "{title}"')
-
-    if len(response) == 0 or not "id" in response[0]:
+    try:
+        response = make_igdb_request(f'search "{title}"')
+    except:
         return {}
 
-    similars = [data_from_query(query, title) for query in response]
+    similars = [__data_from_query__(query, title) for query in response]
     best_fit = None
 
     # filter by platform wanted
@@ -254,7 +246,7 @@ def search_game_by_title(title, list_all=True, platform_wanted="")->Game:
         similars_filtered = [game for game in similars if len(difflib.get_close_matches(
             platform_wanted,
             game.platforms,
-            n=1,cutoff=0.6)) > 0
+            n=1,cutoff=0.8)) > 0
         ]
 
         if len(similars_filtered)>0:
@@ -265,7 +257,7 @@ def search_game_by_title(title, list_all=True, platform_wanted="")->Game:
         best_fit = similars[0]
         title_matches = difflib.get_close_matches(
             title, [sim.title for sim in similars],
-            n=1, cutoff=0
+            n=1, cutoff=0.6
         )
 
         if len(title_matches) > 0:
@@ -286,7 +278,7 @@ def search_game_by_title(title, list_all=True, platform_wanted="")->Game:
             spinner.resume(f'Selected option {user_input}')
 
             if not user_input:
-                return None
+                return {}
 
             try:
                 user_input_id = int(user_input)
@@ -302,5 +294,35 @@ def search_game_by_title(title, list_all=True, platform_wanted="")->Game:
 
     return best_fit
 
-# print(search_game_by_title("Super Mario Galaxy", platform_wanted="wii", list_all=False))
-# print(search_game_by_id(-1))
+def list_games_by_title(title, platform_wanted="")->list[tuple[int, str, str, str]]:
+    """
+    Perform a search in IGDB with the given params and returns a list of possible matches
+    :param title: Game to search
+    :type a: string
+    :param platform_wanted: Filter searches by platform
+    :type platform_wanted: string
+    :return: List of info about matching games
+    :rtype: list[{id, title, launchdate, platforms}]
+    """
+
+    try:
+        response = make_igdb_request(f'search "{title}"')
+    except:
+        return []
+    similars = [__data_from_query__(query, title) for query in response]
+    res = []
+
+    if platform_wanted:
+        similars_filtered = [game for game in similars if len(difflib.get_close_matches(
+            platform_wanted,
+            game.platforms,
+            n=1,cutoff=0.6)) > 0
+        ]
+
+        if len(similars_filtered)>0:
+            similars = similars_filtered
+
+    for i, g in enumerate(similars):
+        res.append((g.igdbId, g.title, g.launchDate, g.platforms))
+
+    return res

@@ -1,12 +1,13 @@
 import json
 import os
-from typing import NamedTuple
+from typing import NamedTuple, Iterator
 import requests
 from dotenv import load_dotenv
-import igdb
-from igdb import Game
-from spinner import Spinner
-from utils import remove_comas
+from notion_gametracker import igdb, notion_filter
+from notion_gametracker.igdb import Game
+from notion_gametracker.spinner import Spinner
+from notion_gametracker.utils import remove_comas
+from notion_gametracker.status import Status, StatusCode
 
 load_dotenv()
 
@@ -55,7 +56,7 @@ class NotionPage(NamedTuple):
     cover_url: str = ""
     icon_url: str = ""
     game: 'Game' = None
-    anticipated: str = "Unknown"
+    anticipated: str = ""
     status: str = "Pending"
     url: str = ""
     json: dict = {}
@@ -106,7 +107,7 @@ class NotionPage(NamedTuple):
             json=data
         )
 
-    def needs_update(self):
+    def needs_update(self) -> bool:
         "Whether a page has any field that always requires updating"
         return (
             "#" in self.game.title
@@ -152,29 +153,30 @@ class NotionPage(NamedTuple):
 
         return notion_dict
 
-    def update_to_notion(self, new_game: Game = None):
-        "Push NotionPage to Notion"
-        update_url = (f"https://api.notion.com/v1/pages/{self.id}" 
-            if self.id
-            else f"https://api.notion.com/v1/pages"
-        )
-
+    def set_game(self, new_game: Game = None):
         if new_game is not None:
             self = self._replace(
                 game=new_game,
                 cover_url=new_game.cover_url,
                 icon_url=new_game.icon_url
             )
+            
+    def push_to_notion(self) -> Status:
+        "Push NotionPage to Notion"
+        update_url = (f"https://api.notion.com/v1/pages/{self.id}" 
+            if self.id
+            else f"https://api.notion.com/v1/pages"
+        )
 
         data = json.dumps(self.to_dict())
         if self.id:
             response = requests.patch(update_url, headers=headers, data=data)
+            return Status(StatusCode.SUCCESS, f"Notion page {self.game.title} pushed") if response.status_code == 200 else Status(StatusCode.NOTION_ERROR, response.text)
         else:
             response = requests.post(update_url, headers=headers, data=data)
-        print(response.text)
-        return [response.status_code, response.text]
+            return Status(StatusCode.SUCCESS, f"Notion page {self.game.title} created") if response.status_code == 200 else Status(StatusCode.NOTION_ERROR, response.text)
 
-    def search_in_igdb(self, verbose=False, list_all=False):
+    def search_in_igdb(self, verbose=False, list_all=False) -> tuple[Status, Game]:
         "Search game in IGDB with the `NotionPage` name and push changes"
         name_splitted = self.game.title.split()
         is_new_game = False
@@ -194,31 +196,43 @@ class NotionPage(NamedTuple):
         if not is_new_game and not self.needs_update():
             if verbose:
                 spinner.stop("Already updated", "👍", "grey")
-            return
+            return Status(StatusCode.SUCCESS, "Page didn't need updates"), {}
 
         valid_id = self.game.igdbId is not None and self.game.igdbId > 0
         spinner.log(
             f'Searching in IGDB by {"name" if not valid_id else "id"}...',
             "🔍" if self.game.igdbId is None else "🎯"
         )
-        igdb_game = igdb.search_game_by_title(
+        
+        status, igdb_game = igdb.search_game_by_title(
             title, list_all=list_all, platform_wanted=platform_wanted
         ) if not valid_id else igdb.search_game_by_id(self.game.igdbId)
 
-        if not igdb_game:
-            spinner.error("Not found in IGDB")
-            return
+        if status.code!=StatusCode.SUCCESS or not igdb_game:
+            return status, {}
 
         name_dif = abs(len(igdb_game.title) - len(title))
         if name_dif > 2:
             print(f'⚠️ Original name ({title}) and found name ({igdb_game.title}) differ by {name_dif} characters')
 
-        return remove_comas(igdb_game)
+        return Status(StatusCode.SUCCESS, "Game found in IGDB"), remove_comas(igdb_game)
     
-    def process(self, verbose=False, list_all=False):
+    def process(self, verbose=False, list_all=False)->Status:
         spinner = Spinner()
-        igdb_game = self.search_in_igdb(verbose, list_all)
+        status, igdb_game = self.search_in_igdb(verbose, list_all)
 
+        # todo: dividir casos para hacer warn o normal, ya que puede devolver nada si no hay anda que actualizar
+        if status.code != StatusCode.SUCCESS or not igdb_game:
+            spinner.warn(f'{self.game.title} {status.message}')
+            spinner.stop()
+            return status
+        
+        for p in search_pages_by_name_id(igdb_game.igdbId):
+            if p.id!=self.id and p.game.igdbId == igdb_game.igdbId:
+                spinner.warn(f'{self.game.title} with id {igdb_game.igdbId} already exists, deleting duplicate')
+                spinner.stop()
+                return self.delete()
+            
         overwritted_fields = self.game.overwritten_fields(igdb_game)
         missed_fields = igdb_game.missing_fields()
 
@@ -226,18 +240,22 @@ class NotionPage(NamedTuple):
             if missed_fields:
                 spinner.log(f'Could not get missing fields: {missed_fields}', "🌵", 'grey')
                 spinner.stop()
-                return
-
-            spinner.warn("this line shouldn't be reached")
+                return Status(StatusCode.IGDB_WARN, f'Could not get missing fields: {missed_fields}')
 
         spinner.log("Updating Notion page...")
-        code = self.update_to_notion(igdb_game)
-
+        self.set_game(igdb_game)
+        status = self.push_to_notion()
+        if status.code != StatusCode.SUCCESS:
+            spinner.error(status.message)
+            return status
+        
         if overwritted_fields:
             if missed_fields and missed_fields!=["franchises"]:
-                spinner.warn(f'Updated {list(overwritted_fields.keys())}, missing {missed_fields}')
+                status = Status(StatusCode.IGDB_WARN, f'Found new fields {list(overwritted_fields.keys())}, missing {missed_fields}')
+                spinner.warn(status.message)
             else:
-                spinner.log(f'Updated successfully {list(overwritted_fields.keys())}', "✔️", 'green')
+                status = Status(StatusCode.SUCCESS, f'All fields successfully updated: {list(overwritted_fields.keys())}')
+                spinner.log(status.message, "✔️", 'green')
 
             spinner.stop()
             if verbose:
@@ -248,50 +266,82 @@ class NotionPage(NamedTuple):
             spinner.resume("\n")
             return
 
-        if not code[0]:
-            spinner.error("Unknown error")
-            return
-
-        if code[0]!=200:
-            spinner.error(f'Got error {code[1]} from Notion')
-            return
-
         if verbose:
             print(igdb_game)
 
+    def delete(self)->Status:
+        update_url = f"https://api.notion.com/v1/pages/{self.id}"
+        data = self.to_dict()
+        data["in_trash"] = True
+        response = requests.patch(update_url, headers=headers, data=json.dumps(data))
 
-def update_pages(params, verbose=False, list_all=False):
+        return (
+            Status(StatusCode.SUCCESS, f"Notion page {self.game.title} deleted") 
+                if response.ok 
+                else Status(StatusCode.NOTION_ERROR, response.text)
+        )
+
+def search_pages(params) -> Iterator[NotionPage]:
     """Fetch pages from Notion database filtering by `params`,
-    create `NotionPage` instance from it, and call `process` method
-    from each one
+    and yield `NotionPage` instances one by one.
     """
     read_url = f"https://api.notion.com/v1/databases/{databaseID}/query"
-    pages = []
 
     while True:
-        search_response = requests.request("POST", read_url, json=params, headers=headers)
+        search_response = requests.post(read_url, json=params, headers=headers)
 
         if not search_response.ok:
-            raise Exception(
-                f"Failed to fetch pages: {search_response.status_code} - {search_response.text}"
-            )
+            raise RuntimeError(f"Notion API error: {search_response.text}")
 
         search_response_obj = search_response.json()
-        pages = search_response_obj.get("results")
+        results = search_response_obj.get("results", [])
 
-        for page in pages:
-            NotionPage.from_dict(page).process(verbose=verbose, list_all=list_all)
+        for page in results:
+            yield NotionPage.from_dict(page)  # Send each page individually
 
         if not search_response_obj.get("has_more"):
             break
 
         params["start_cursor"] = search_response_obj.get("next_cursor")
 
-def create_page(title, status="Catalog"):
+def search_pages_by_name_id(identifier: str | int, additional_filters: list = None) -> Iterator[NotionPage]:
+    if additional_filters is None:
+        additional_filters = []  # Se crea una nueva lista en cada llamada
+
+    filters = additional_filters + [notion_filter.create_from_name_or_id(identifier)]  
+    return search_pages(notion_filter.generate_params(filters))
+
+def update_pages(params, verbose=False, list_all=False) -> tuple[Status]:
+    """Fetch pages from Notion database filtering by `params`,
+    create `NotionPage` instance from it, and call `process` method
+    from each one
+    """
+    read_url = f"https://api.notion.com/v1/databases/{databaseID}/query"
+    pages = []
+    statuses = []
+    while True:
+        search_response = requests.request("POST", read_url, json=params, headers=headers)
+
+        if not search_response.ok:
+            return Status(StatusCode.NOTION_ERROR, search_response.text)
+
+        search_response_obj = search_response.json()
+        pages = search_response_obj.get("results")
+
+        for page in pages:
+            statuses.append(NotionPage.from_dict(page).process(verbose=verbose, list_all=list_all))
+
+        if not search_response_obj.get("has_more"):
+            break
+
+        params["start_cursor"] = search_response_obj.get("next_cursor")
+
+    return statuses
+
+def create_page(title, status="Catalog") -> Status:
     page = NotionPage(
         game=Game.create(title=title),
         status=status
     )
 
-    print(page.json)
-    page.update_to_notion()
+    return page.push_to_notion()

@@ -1,0 +1,9 @@
+Metadata-Version: 2.2
+Name: notion_gametracker
+Version: 0.1.0
+License-File: LICENSE
+Requires-Dist: howlongtobeatpy==1.0.16
+Requires-Dist: requests==2.32.3
+Requires-Dist: python-dotenv==1.0.1
+Requires-Dist: halo
+Dynamic: requires-dist

@@ -4,8 +4,8 @@ It defines a mapping of Notion property types and provides helper functions for 
 filter parameters to interact with Notion's database through its API.
 
 Functions:
-- new_filter: Creates a filter for a specific property with a given action and value.
-- generate_filter_params: Generates the full parameters for making a filtered API
+- create: Creates a filter for a specific property with a given action and value.
+- generate_params: Generates the full parameters for making a filtered API
 request with optional pagination.
 
 Notion Property Types:
@@ -34,10 +34,10 @@ notion_property_types = {
     "Additional Labels": "multi_select",
     "Start Date": "date",
     "Developer": "multi_select",
-    "Game Title": "rich_text"
+    "Game Title": "rich_text",
 }
 
-def new_filter(property_name, filter_action, property_value):
+def create(property_name, filter_action, property_value):
     """
     Creates a filter for a specific Notion property based on the provided filter action and value.
 
@@ -50,7 +50,7 @@ def new_filter(property_name, filter_action, property_value):
     - dict: A dictionary representing the filter to be used in a Notion API request.
 
     Example:
-    new_filter("Rating", "equals", 5)
+    create("Rating", "equals", 5)
     Would return:
     {
         "property": "Rating",
@@ -60,7 +60,7 @@ def new_filter(property_name, filter_action, property_value):
     if property_value in ('True', 'False'):
         property_value = bool(property_value)
 
-    elif bool(re.match(r"^[0-9]+$", property_value)):
+    elif bool(re.match(r"^[0-9]+$", str(property_value))):
         property_value = int(property_value)
 
     return {
@@ -68,13 +68,13 @@ def new_filter(property_name, filter_action, property_value):
         notion_property_types[property_name]: {filter_action: property_value}
     }
 
-def generate_filter_params(filters, page_amount=25):
+def generate_params(filters, page_amount=25):
     """
     Generates the full parameters for making a filtered API request, with optional pagination.
 
     Args:
     - filters (list): A list of filter dictionaries, where each dictionary is
-    a filter created by `new_filter`.
+    a filter created by `create`.
     - page_amount (int, optional): The number of results per page. Defaults to 25.
 
     Returns:
@@ -82,7 +82,7 @@ def generate_filter_params(filters, page_amount=25):
     the filters and pagination information.
 
     Example:
-    generate_filter_params([{"property": "Rating", "number": {"equals": 5}}], page_amount=10)
+    generate_params([{"property": "Rating", "number": {"equals": 5}}], page_amount=10)
     Would return:
     {
         "page_size": 10,
@@ -90,11 +90,18 @@ def generate_filter_params(filters, page_amount=25):
     }
     """
     params = {"page_size": page_amount}
-
-    if filters:
+    if filters and len(filters)>0:
         if len(filters) == 1:
             params["filter"] = filters[0]
         else:
             params["filter"] = {"and": filters}
 
     return params
+
+def create_from_name_or_id(identifier: str | int) -> dict[str, int]:
+    if isinstance(identifier, int) or identifier.isdigit():
+        return create("IGDB ID", "equals", str(identifier))
+    elif isinstance(identifier, str):
+        return create("Game Title", "equals", identifier)
+    else:
+        return {}
